@@ -1,0 +1,119 @@
+from __future__ import annotations
+from pathlib import Path
+from clipforge.db import Database
+from clipforge.models import Status, ClipMetadata
+from clipforge import highlights, metadata
+
+_MAX_RETRIES = 3
+
+# stage order: (current_status, in_progress_status, handler_name)
+_STAGES = [
+    Status.DISCOVERED, Status.DOWNLOADED, Status.TRANSCRIBED,
+    Status.HIGHLIGHTED, Status.CLIPPED,
+]
+
+
+class Pipeline:
+    def __init__(self, db: Database, downloader, transcriber, clipper,
+                 uploader, cleanup, config, llm=None):
+        self._db = db
+        self._dl = downloader
+        self._tr = transcriber
+        self._clip = clipper
+        self._up = uploader
+        self._cleanup = cleanup
+        self._cfg = config
+        self._llm = llm
+        self._segments: dict[str, list] = {}
+        self._best: dict[str, object] = {}
+
+    def _handle(self, rec) -> None:
+        vid = rec.video_id
+        root = Path(self._cfg.storage_root)
+        if rec.status == Status.DISCOVERED:
+            if self._dl.is_live(rec.url):
+                raise RuntimeError("still live")
+            self._db.set_status(vid, Status.DOWNLOADING)
+            path = self._dl.download(vid, rec.url)
+            self._db.set_paths(vid, source_path=path)
+            self._db.set_status(vid, Status.DOWNLOADED)
+        elif rec.status == Status.DOWNLOADED:
+            self._db.set_status(vid, Status.TRANSCRIBING)
+            audio = str(root / "audio" / f"{vid}.wav")
+            (root / "audio").mkdir(parents=True, exist_ok=True)
+            segs = self._tr.transcribe(rec.source_path, audio)
+            self._segments[vid] = segs
+            self._db.set_status(vid, Status.TRANSCRIBED)
+        elif rec.status == Status.TRANSCRIBED:
+            self._db.set_status(vid, Status.HIGHLIGHTING)
+            segs = self._segments.get(vid, [])
+            best = highlights.pick_best(
+                segs, self._cfg.clip_min_seconds, self._cfg.clip_max_seconds,
+                llm=self._llm)
+            if best is None:
+                raise RuntimeError("no highlight found")
+            self._best[vid] = best
+            self._db.set_rank(vid, best.score)
+            self._db.set_status(vid, Status.HIGHLIGHTED)
+        elif rec.status == Status.HIGHLIGHTED:
+            self._db.set_status(vid, Status.CLIPPING)
+            segs = self._segments.get(vid, [])
+            best = self._best.get(vid)
+            if best is None:
+                raise RuntimeError("missing segment; will reprocess")
+            clip_path = self._clip.make_short(vid, rec.source_path, best, segs)
+            self._db.set_paths(vid, clip_path=clip_path)
+            self._db.set_status(vid, Status.CLIPPED)
+        elif rec.status == Status.CLIPPED:
+            self._db.set_status(vid, Status.METADATA)
+            segs = self._segments.get(vid, [])
+            text = " ".join(s.text for s in segs)
+            meta = metadata.generate_metadata(rec.title, text, llm=self._llm)
+            self._db.set_status(vid, Status.READY)
+            self._meta_cache = getattr(self, "_meta_cache", {})
+            self._meta_cache[vid] = meta
+
+    def advance_one(self) -> str | None:
+        for status in _STAGES:
+            rec = self._db.next_in_status(status)
+            if rec is None:
+                continue
+            try:
+                self._handle(rec)
+                return rec.video_id
+            except Exception as e:
+                count = self._db.bump_retry(rec.video_id, str(e))
+                # roll back to clean state so the stage retries
+                self._db.reset_stuck()
+                if count > _MAX_RETRIES:
+                    self._db.set_status(rec.video_id, Status.FAILED, str(e))
+                return rec.video_id
+        return None
+
+    def _priority_index(self, channel_id: str) -> int:
+        for i, ch in enumerate(self._cfg.enabled_channels()):
+            if ch.channel_id == channel_id:
+                return i
+        return 10_000
+
+    def publish_daily(self) -> str | None:
+        ready = self._db.list_ready()
+        if not ready:
+            return None
+        ready.sort(key=lambda r: (-r.rank_score,
+                                  self._priority_index(r.channel_id),
+                                  r.discovered_at))
+        rec = ready[0]
+        self._db.set_status(rec.video_id, Status.PUBLISHING)
+        cache = getattr(self, "_meta_cache", {})
+        meta = cache.get(rec.video_id) or ClipMetadata(
+            title=rec.title[:100], description="#Shorts", tags=["shorts"])
+        try:
+            self._up.upload(rec.clip_path, meta)
+        except Exception as e:
+            self._db.set_status(rec.video_id, Status.READY, str(e))
+            return None
+        self._db.set_status(rec.video_id, Status.PUBLISHED)
+        self._cleanup.delete_source(rec.video_id, rec.source_path)
+        self._cleanup.enforce_quota()
+        return rec.video_id
