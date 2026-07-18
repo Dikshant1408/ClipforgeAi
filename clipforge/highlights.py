@@ -26,6 +26,34 @@ def energy_score(rms: float, max_rms: float) -> float:
     return max(0.0, min(1.0, rms / max_rms))
 
 
+def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
+    import wave
+    import numpy as np
+    def energy_func(start: float, end: float) -> float:
+        try:
+            with wave.open(wav_path, "rb") as w:
+                sr = w.getframerate()
+                sampwidth = w.getsampwidth()
+                if sampwidth != 2:
+                    return 0.0
+                start_frame = int(start * sr)
+                end_frame = int(end * sr)
+                if start_frame >= w.getnframes():
+                    return 0.0
+                w.setpos(start_frame)
+                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
+                if frames_to_read <= 0:
+                    return 0.0
+                data = w.readframes(frames_to_read)
+                samples = np.frombuffer(data, dtype=np.int16)
+                if len(samples) == 0:
+                    return 0.0
+                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+        except Exception:
+            return 0.0
+    return energy_func
+
+
 def candidate_windows(segments: list[TranscriptSeg], min_s: float,
                        max_s: float) -> list[Segment]:
     windows: list[Segment] = []
@@ -82,6 +110,14 @@ def pick_best(segments: list[TranscriptSeg], min_s: float, max_s: float,
     windows = candidate_windows(segments, min_s, max_s)
     if not windows:
         return None
+    if energy is not None:
+        rms_vals = []
+        for w in windows:
+            rms_vals.append(energy(w.start, w.end))
+        max_rms = max(rms_vals) if rms_vals else 0.0
+        if max_rms > 0.0:
+            for idx, w in enumerate(windows):
+                w.score += energy_score(rms_vals[idx], max_rms) * 0.5
     # boost the LLM-chosen window if available
     if llm is not None:
         try:

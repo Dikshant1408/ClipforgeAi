@@ -47,9 +47,29 @@ class Pipeline:
         elif rec.status == Status.TRANSCRIBED:
             self._db.set_status(vid, Status.HIGHLIGHTING)
             segs = self._segments.get(vid, [])
+            audio_path = str(root / "audio" / f"{vid}.wav")
+            
+            # No-speech handling: generate dummy segments every 10s if transcript is empty
+            if not segs:
+                from clipforge.transcribe import TranscriptSeg
+                duration = self._dl.duration(rec.url)
+                if duration <= 0:
+                    duration = 100.0  # fallback
+                step = 10.0
+                segs = []
+                for t in range(0, int(duration), int(step)):
+                    segs.append(TranscriptSeg(
+                        start=float(t),
+                        end=float(min(t + step, duration)),
+                        text="",
+                        words=[]
+                    ))
+                self._segments[vid] = segs
+                
+            energy_fn = highlights.make_wav_energy_func(audio_path) if Path(audio_path).exists() else None
             best = highlights.pick_best(
                 segs, self._cfg.clip_min_seconds, self._cfg.clip_max_seconds,
-                llm=self._llm)
+                llm=self._llm, energy=energy_fn)
             if best is None:
                 raise RuntimeError("no highlight found")
             self._best[vid] = best
