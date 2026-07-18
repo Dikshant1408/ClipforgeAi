@@ -1,0 +1,34 @@
+{
+  "source_channels": [
+    {
+      "name": "Tarik",
+      "channel_id": "UCxxxxxxxxxxxxxxxxxxxxxx",
+      "enabled": true,
+      "priority": 100
+    }
+  ],
+  "publish_time": "18:00",
+  "timezone": "Asia/Kolkata",
+  "monitor_interval_minutes": 10,
+  "clip": {
+    "min_seconds": 20,
+    "max_seconds": 60,
+    "crop": "center"
+  },
+  "whisper": {
+    "model": "small",
+    "device": "cpu"
+  },
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-2.0-flash"
+  },
+  "youtube": {
+    "privacy_status": "public",
+    "category_id": "20"
+  },
+  "storage": {
+    "root": "./storage"
+  },
+  "max_disk_gb": 50
+}
