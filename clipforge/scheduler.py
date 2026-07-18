@@ -84,6 +84,15 @@ def run_once(config: Config, url: str) -> None:
 
 def run_forever(config: Config, dry_run: bool = False) -> None:
     db, pipe, monitor = build_pipeline(config, dry_run=dry_run)
+    if not dry_run:
+        log.info("Checking YouTube API credentials...")
+        try:
+            from clipforge.youtube import _default_service_factory
+            _default_service_factory()
+            log.info("YouTube credentials verified successfully.")
+        except Exception as e:
+            log.error("Failed to authenticate YouTube API on startup: %s", e)
+            raise e
     db.reset_stuck()
     sched = BackgroundScheduler(timezone=config.timezone)
     sched.add_job(lambda: monitor.poll(config.reload().enabled_channels()),
