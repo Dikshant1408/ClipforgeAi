@@ -1,6 +1,12 @@
 {
   "source_channels": [
     {
+      "name": "VCTPacific",
+      "channel_id": "UCA8fUfoBLWyUpAZTbXB0uoA",
+      "enabled": true,
+      "priority": 100
+    },
+    {
       "name": "Tarik",
       "channel_id": "UCxxxxxxxxxxxxxxxxxxxxxx",
       "enabled": true,
