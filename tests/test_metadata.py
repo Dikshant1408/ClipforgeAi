@@ -11,12 +11,16 @@ def test_template_metadata():
 def test_generate_with_llm():
     class LLM:
         def generate_json(self, prompt):
-            return {"title": "Insane Play!", "description": "wow",
-                    "tags": ["gaming", "shorts"]}
+            return {
+                "catchy_title": "Insane Play!", 
+                "summary": "wow",
+                "hashtags": ["#gaming", "#shorts"],
+                "tags": ["gaming", "shorts"]
+            }
         def generate_text(self, prompt):
             return ""
     m = generate_metadata("t", "txt", llm=LLM())
-    assert m.title == "Insane Play!"
+    assert m.title == "Insane Play! | VCT VALORANT #shorts"
     assert "gaming" in m.tags
 
 def test_generate_degrades_on_error():
@@ -32,7 +36,12 @@ def test_generate_degrades_on_error():
 def test_title_truncated_to_100():
     class LLM:
         def generate_json(self, prompt):
-            return {"title": "x" * 200, "description": "d", "tags": []}
+            return {
+                "catchy_title": "x" * 200, 
+                "summary": "d", 
+                "hashtags": [],
+                "tags": []
+            }
         def generate_text(self, prompt):
             return ""
     m = generate_metadata("t", "txt", llm=LLM())
@@ -41,8 +50,12 @@ def test_title_truncated_to_100():
 def test_tags_capped_at_20():
     class LLM:
         def generate_json(self, prompt):
-            return {"title": "t", "description": "d",
-                    "tags": [f"t{i}" for i in range(50)]}
+            return {
+                "catchy_title": "t", 
+                "summary": "d",
+                "hashtags": [],
+                "tags": [f"t{i}" for i in range(50)]
+            }
         def generate_text(self, prompt):
             return ""
     m = generate_metadata("t", "txt", llm=LLM())
