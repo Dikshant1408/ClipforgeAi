@@ -102,9 +102,28 @@ def _llm_rank(llm: LLMProvider, windows: list[Segment],
     return None
 
 
+def pad_hook(seg: Segment, segments: list[TranscriptSeg], lead: float,
+             min_s: float) -> Segment:
+    """Start the clip a little BEFORE the highlight so the action lands in the
+    first ~2s instead of after dead buildup. Never go before t=0."""
+    if lead <= 0:
+        return seg
+    new_start = max(0.0, seg.start - lead)
+    if (seg.end - new_start) < min_s:
+        # extend the end to honour the minimum length
+        new_end = seg.end + (min_s - (seg.end - new_start))
+        seg = Segment(start=new_start, end=new_end, score=seg.score,
+                      reason=seg.reason)
+    else:
+        seg = Segment(start=new_start, end=seg.end, score=seg.score,
+                      reason=seg.reason)
+    return seg
+
+
 def pick_best(segments: list[TranscriptSeg], min_s: float, max_s: float,
               llm: LLMProvider = None,
-              energy: Callable[[float, float], float] = None) -> Segment | None:
+              energy: Callable[[float, float], float] = None,
+              hook_lead: float = 0.0) -> Segment | None:
     if not segments:
         return None
     windows = candidate_windows(segments, min_s, max_s)
@@ -127,4 +146,5 @@ def pick_best(segments: list[TranscriptSeg], min_s: float, max_s: float,
         except LLMError:
             pass  # degrade to keyword-only scoring
     windows.sort(key=lambda w: (w.score, -(w.end - w.start)), reverse=True)
-    return windows[0]
+    best = windows[0]
+    return pad_hook(best, segments, hook_lead, min_s)

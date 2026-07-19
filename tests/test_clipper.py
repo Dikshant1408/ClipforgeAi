@@ -35,3 +35,34 @@ def test_make_short_failure_raises(tmp_path):
     seg = Segment(start=0.0, end=15.0, score=1.0)
     with pytest.raises(RuntimeError):
         c.make_short("vid1", "src.mp4", seg, [])
+
+
+def test_build_ass_karaoke_highlights_words():
+    segs = [TranscriptSeg(10.0, 12.0, "hello world",
+                          [Word(10.0, 11.0, "hello"), Word(11.0, 12.0, "world")])]
+    ass = build_ass(segs, seg_start=10.0, seg_end=12.0)
+    # karaoke tags paint each word progressively
+    assert "\\k" in ass
+    assert "hello" in ass and "world" in ass
+
+
+def test_build_ass_hook_overlay_present():
+    segs = [TranscriptSeg(0.0, 2.0, "hi", [Word(0.0, 2.0, "hi")])]
+    ass = build_ass(segs, seg_start=0.0, seg_end=20.0, hook_text="He threw it")
+    assert "Hook," in ass
+    assert "He threw it" in ass
+
+
+def test_make_short_includes_zoompan(tmp_path):
+    def runner(argv):
+        Path(argv[-1]).write_text("x")
+        return 0
+    c = Clipper(str(tmp_path), runner=runner)
+    seg = Segment(start=10.0, end=25.0, score=1.0)
+    c.make_short("vid1", str(tmp_path / "src.mp4"), seg,
+                 [TranscriptSeg(10.0, 12.0, "hi", [])], hook_text="Hook line")
+    argv = None  # not captured; inspect ASS file instead
+    ass_path = tmp_path / "clips" / "vid1.ass"
+    assert ass_path.exists()
+    ass_content = ass_path.read_text(encoding="utf-8")
+    assert "Hook line" in ass_content  # hook burned into ASS

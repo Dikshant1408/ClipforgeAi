@@ -10,12 +10,13 @@ _TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 @dataclass
 class Config:
     source_channels: list[SourceChannel]
-    publish_time: str
+    publish_time: list[str]
     timezone: str
     monitor_interval_minutes: int
     clip_min_seconds: int
     clip_max_seconds: int
     crop: str
+    hook_lead_seconds: float
     whisper_model: str
     whisper_device: str
     llm_provider: str
@@ -59,9 +60,19 @@ def load_config(path: str) -> Config:
             priority=int(c.get("priority", 100)),
         ))
 
-    publish_time = d.get("publish_time", "")
-    _require(bool(_TIME_RE.match(publish_time)),
-             "publish_time must be HH:MM 24-hour")
+    publish_time_val = d.get("publish_time")
+    if isinstance(publish_time_val, str):
+        publish_times = [publish_time_val]
+    elif isinstance(publish_time_val, list):
+        publish_times = list(publish_time_val)
+    else:
+        raise ValueError("publish_time must be a HH:MM 24-hour string or list of strings")
+
+    _require(len(publish_times) > 0, "publish_time list cannot be empty")
+    for t in publish_times:
+        _require(isinstance(t, str) and bool(_TIME_RE.match(t)),
+                 f"publish_time '{t}' must be HH:MM 24-hour")
+    publish_time = publish_times
 
     clip = d.get("clip", {})
     mn = int(clip.get("min_seconds", 20))
@@ -69,6 +80,7 @@ def load_config(path: str) -> Config:
     _require(0 < mn <= mx, "clip.min_seconds must be >0 and <= max_seconds")
     crop = clip.get("crop", "center")
     _require(crop == "center", "only crop=center supported in v1")
+    hook_lead = float(clip.get("hook_lead_seconds", 1.5))
 
     return Config(
         source_channels=channels,
@@ -78,6 +90,7 @@ def load_config(path: str) -> Config:
         clip_min_seconds=mn,
         clip_max_seconds=mx,
         crop=crop,
+        hook_lead_seconds=hook_lead,
         whisper_model=d.get("whisper", {}).get("model", "small"),
         whisper_device=d.get("whisper", {}).get("device", "cpu"),
         llm_provider=d.get("llm", {}).get("provider", "gemini"),

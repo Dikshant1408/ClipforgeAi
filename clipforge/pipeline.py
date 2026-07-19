@@ -69,7 +69,8 @@ class Pipeline:
             energy_fn = highlights.make_wav_energy_func(audio_path) if Path(audio_path).exists() else None
             best = highlights.pick_best(
                 segs, self._cfg.clip_min_seconds, self._cfg.clip_max_seconds,
-                llm=self._llm, energy=energy_fn)
+                llm=self._llm, energy=energy_fn,
+                hook_lead=self._cfg.hook_lead_seconds)
             if best is None:
                 raise RuntimeError("no highlight found")
             self._best[vid] = best
@@ -81,7 +82,9 @@ class Pipeline:
             best = self._best.get(vid)
             if best is None:
                 raise RuntimeError("missing segment; will reprocess")
-            clip_path = self._clip.make_short(vid, rec.source_path, best, segs)
+            hook_text = self._make_hook(rec, segs)
+            clip_path = self._clip.make_short(
+                vid, rec.source_path, best, segs, hook_text=hook_text)
             self._db.set_paths(vid, clip_path=clip_path)
             self._db.set_status(vid, Status.CLIPPED)
         elif rec.status == Status.CLIPPED:
@@ -89,6 +92,7 @@ class Pipeline:
             segs = self._segments.get(vid, [])
             text = " ".join(s.text for s in segs)
             meta = metadata.generate_metadata(rec.title, text, llm=self._llm)
+            self._db.set_metadata(vid, meta.title, meta.description, meta.tags)
             self._db.set_status(vid, Status.READY)
             self._meta_cache = getattr(self, "_meta_cache", {})
             self._meta_cache[vid] = meta
@@ -110,6 +114,30 @@ class Pipeline:
                 return rec.video_id
         return None
 
+    def _make_hook(self, rec, segs) -> str:
+        """Short bold 'story' hook for the first frames. Prioritises the LLM
+        so it sets up a narrative; falls back to a trimmed title. Capped at
+        ~60 chars so it fits one line on the hook overlay."""
+        if self._llm is not None:
+            text = " ".join(s.text for s in segs)
+            prompt = (
+                "Write ONE short, bold hook line (max 8 words, no emoji, no "
+                "quote marks) that sets up a story and makes someone want to "
+                "keep watching this gaming clip. Examples: 'He threw the whole "
+                "game', 'This clutch was NOT scripted'.\n"
+                f"Clip context: {rec.title}\nTranscript: {text[:800]}\n\n"
+                'Return ONLY JSON: {"hook": "..."}'
+            )
+            try:
+                data = self._llm.generate_json(prompt)
+                hook = str(data.get("hook", "")).strip().strip('"').strip("'")
+                if hook:
+                    return hook[:60]
+            except Exception:
+                pass
+        title = rec.title or "Insane moment"
+        return title[:60].replace(" | VALORANT #shorts", "")
+
     def _priority_index(self, channel_id: str) -> int:
         for i, ch in enumerate(self._cfg.enabled_channels()):
             if ch.channel_id == channel_id:
@@ -126,8 +154,17 @@ class Pipeline:
         rec = ready[0]
         self._db.set_status(rec.video_id, Status.PUBLISHING)
         cache = getattr(self, "_meta_cache", {})
-        meta = cache.get(rec.video_id) or ClipMetadata(
-            title=rec.title[:100], description="#Shorts", tags=["shorts"])
+        meta = cache.get(rec.video_id)
+        if meta is None:
+            if rec.meta_title:
+                meta = ClipMetadata(
+                    title=rec.meta_title,
+                    description=rec.meta_description,
+                    tags=rec.meta_tags.split(",") if rec.meta_tags else []
+                )
+            else:
+                meta = ClipMetadata(
+                    title=rec.title[:100], description="#Shorts", tags=["shorts"])
         try:
             self._up.upload(rec.clip_path, meta)
         except Exception as e:

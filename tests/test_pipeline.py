@@ -8,8 +8,9 @@ from clipforge.config import Config
 def _cfg(tmp_path):
     return Config(
         source_channels=[SourceChannel("A", "UC1", True, 1)],
-        publish_time="18:00", timezone="UTC", monitor_interval_minutes=10,
+        publish_time=["18:00"], timezone="UTC", monitor_interval_minutes=10,
         clip_min_seconds=5, clip_max_seconds=30, crop="center",
+        hook_lead_seconds=1.5,
         whisper_model="small", whisper_device="cpu",
         llm_provider="gemini", llm_model="m",
         youtube_privacy_status="public", youtube_category_id="20",
@@ -25,7 +26,7 @@ class FakeTranscriber:
         return [TranscriptSeg(0.0, 10.0, "insane no way", [])]
 
 class FakeClipper:
-    def make_short(self, vid, src, seg, tr): return f"/clips/{vid}.mp4"
+    def make_short(self, vid, src, seg, tr, hook_text=""): return f"/clips/{vid}.mp4"
 
 class FakeUploader:
     def __init__(self): self.uploaded = []
