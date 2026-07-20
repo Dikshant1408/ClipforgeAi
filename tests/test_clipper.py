@@ -37,6 +37,31 @@ def test_make_short_failure_raises(tmp_path):
         c.make_short("vid1", "src.mp4", seg, [])
 
 
+def test_output_audio_matches_segment_duration(tmp_path):
+    """Regression: input-side -ss desynced audio and cut it short. Output must
+    contain both video and audio streams whose duration matches the segment."""
+    import subprocess as _sp
+    src = tmp_path / "src.mp4"
+    _sp.run(["ffmpeg", "-y", "-f", "lavfi", "-i",
+             "testsrc=duration=30:size=1280x720:rate=30",
+             "-f", "lavfi", "-i", "sine=frequency=440:duration=30",
+             "-c:v", "libx264", "-c:a", "aac", "-shortest",
+             "-pix_fmt", "yuv420p", str(src)], capture_output=True)
+    seg = Segment(start=5.0, end=20.0, score=1.0)
+    segs = [TranscriptSeg(5.0, 7.0, "no way", [Word(5.0, 7.0, "no way")]),
+            TranscriptSeg(7.0, 9.0, "insane", [Word(7.0, 9.0, "insane")])]
+    out = Clipper(str(tmp_path)).make_short("v1", str(src), seg, segs,
+                                            hook_text="Hook")
+    probe = _sp.run(["ffprobe", "-v", "error",
+                    "-show_entries", "format=duration:stream=codec_type",
+                    "-of", "json", str(out)], capture_output=True, text=True)
+    data = __import__("json").loads(probe.stdout)
+    dur = float(data["format"]["duration"])
+    types = [s["codec_type"] for s in data["streams"]]
+    assert "video" in types and "audio" in types
+    assert 14.5 <= dur <= 15.5  # requested 15.0s
+
+
 def test_build_ass_karaoke_highlights_words():
     segs = [TranscriptSeg(10.0, 12.0, "hello world",
                           [Word(10.0, 11.0, "hello"), Word(11.0, 12.0, "world")])]

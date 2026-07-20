@@ -118,9 +118,15 @@ class Clipper:
               "zoompan=z='min(zoom+0.0008,1.12)':d=1:x='iw/2-(iw/zoom/2)':"
               "y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,"
               f"ass='{ass_escaped}'")
-        argv = ["ffmpeg", "-y", "-ss", str(seg.start), "-to", str(seg.end),
-                "-i", source_path, "-vf", vf, "-c:a", "aac",
-                str(out_path)]
+        # Seek AFTER -i (output seeking) so audio and video are cut from the
+        # same decoded timeline. Input-side seeking (-ss before -i) can desync
+        # streams and truncate audio early. -avoid_negative_ts keeps them
+        # aligned at the start.
+        argv = ["ffmpeg", "-y", "-i", source_path,
+                "-ss", str(seg.start), "-to", str(seg.end),
+                "-avoid_negative_ts", "make_zero",
+                "-vf", vf, "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-ar", "44100", str(out_path)]
         rc = self._runner(argv)
         if rc != 0:
             raise RuntimeError(f"ffmpeg clip failed (rc={rc})")
