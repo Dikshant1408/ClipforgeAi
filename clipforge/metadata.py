@@ -17,9 +17,6 @@ def template_metadata(video_title: str, transcript_text: str) -> ClipMetadata:
         title = f"{base[:allowed_len]} | VALORANT #shorts"
 
     desc = (
-        "🔥 Title (Shorts Style)\n\n"
-        f"{title}\n\n"
-        "📝 Description\n\n"
         "This wasn't a skit... 😭\n"
         "They actually did this naturally, and it makes the clip even funnier.\n\n"
         "Subscribe for more clips 👇\n"
@@ -61,8 +58,15 @@ def generate_metadata(video_title: str, transcript_text: str,
         "Generate:\n"
         "1. 'catchy_title': a catchy title under 75 chars about the most engaging "
         "moment, with relevant emojis (do NOT add '| VALORANT #shorts', it is added for you).\n"
-        "2. 'summary': a 2-line summary of the emotional/funny/key moment.\n"
-        "3. 'hashtags': 6-10 specific content hashtags (include leading #).\n"
+        "2. 'summary': ONE or TWO vivid sentences telling the story of the clip "
+        "like a human would (name the player/team/agent/weapon if known, say what "
+        "happened and why it's impressive). No hashtags, no section headers. "
+        "Example: 'Team Secret's Sylvan completely shuts down the enemy in an "
+        "unbelievable 1v1 clutch! His insane game sense and crisp aim saved the "
+        "round when all hope seemed lost.'\n"
+        "3. 'hashtags': 8-15 specific clip hashtags (leading #), including players, "
+        "teams, agents, and moment types from THIS clip (e.g. #teamsecret #sylvan "
+        "#valorantclutch), plus general ones.\n"
         "4. 'tags': up to 15 SEO tags (comma-style keywords, no #).\n\n"
         'Return ONLY JSON: {"catchy_title": "...", "summary": "...", '
         '"hashtags": ["#..."], "tags": ["..."]}'
@@ -114,11 +118,8 @@ def generate_metadata(video_title: str, transcript_text: str,
             hash_lines.append(" ".join(final_hashtags[i:i + 2]))
         hash_block = "\n".join(hash_lines)
 
-        # Description in the user's exact section format
+        # Description: story summary -> subscribe/chai -> hashtags (no headers)
         description = (
-            "🔥 Title (Shorts Style)\n\n"
-            f"{title}\n\n"
-            "📝 Description\n\n"
             f"{summary}\n\n"
             f"{subscribe}\n\n"
             f"{hash_block}"

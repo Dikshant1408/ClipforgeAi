@@ -10,11 +10,10 @@ def test_template_metadata():
 
 def test_template_metadata_uses_exact_format():
     m = template_metadata("Cool Stream", "we did an insane play")
-    assert "🔥 Title (Shorts Style)" in m.description
-    assert "📝 Description" in m.description
+    assert "🔥" not in m.description and "📝" not in m.description
     assert "Subscribe for more clips 👇" in m.description
     assert "https://www.chai4.me/godrikt" in m.description
-    assert "[⚠️ TEMPLATE FALLBACK" in m.description
+    assert "#valorant" in m.description
 
 def test_ai_metadata_uses_exact_format():
     class LLM:
@@ -29,11 +28,10 @@ def test_ai_metadata_uses_exact_format():
             return ""
     m = generate_metadata("t", "txt", llm=LLM())
     assert m.title == "Insane Play! | VALORANT #shorts"
-    assert "🔥 Title (Shorts Style)" in m.description
-    assert "Insane Play! | VALORANT #shorts" in m.description
-    assert "📝 Description" in m.description
+    assert "🔥" not in m.description and "📝" not in m.description
+    assert "Insane Play! | VALORANT #shorts" not in m.description  # title not repeated in desc
     assert "they actually did this naturally 😭" in m.description
-    assert "🏷️ Tags" not in m.description  # tags go to YT tags field, not desc
+    assert "Subscribe for more clips 👇" in m.description
     assert "gaming" in m.tags
     assert "#gaming" in m.description  # hashtags still in description
 
