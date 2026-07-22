@@ -61,10 +61,11 @@ Before running the tool, make sure your Windows PC has:
        "max_seconds": 60,
        "crop": "center"
      },
-     "whisper": {
-       "model": "small",
-       "device": "cpu"
-     },
+      "whisper": {
+        "model": "small",
+        "device": "cpu",
+        "language": "ko"
+      },
      "llm": {
        "provider": "gemini",
        "model": "gemini-2.0-flash"
@@ -76,9 +77,11 @@ Before running the tool, make sure your Windows PC has:
      "storage": {
        "root": "./storage"
      },
-     "max_disk_gb": 50
-   }
-   ```
+      "max_disk_gb": 50
+    }
+    ```
+
+    > **Language Hint:** Set `"language"` inside the `"whisper"` block to a [ISO 639-1 code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (e.g. `"ko"` for Korean, `"ja"` for Japanese, `"en"` for English). Without it, smaller Whisper models (`small`, `medium`) may auto-translate non-English speech into English text. For non-English channels, also upgrade the model to at least `"medium"`.
 
 ---
 
