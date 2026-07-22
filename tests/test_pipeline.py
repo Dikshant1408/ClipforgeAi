@@ -11,7 +11,7 @@ def _cfg(tmp_path):
         publish_time=["18:00"], timezone="UTC", monitor_interval_minutes=10,
         clip_min_seconds=5, clip_max_seconds=30, crop="center",
         hook_lead_seconds=1.5,
-        whisper_model="small", whisper_device="cpu",
+        whisper_model="small", whisper_device="cpu", whisper_language=None,
         llm_provider="gemini", llm_model="m",
         youtube_privacy_status="public", youtube_category_id="20",
         storage_root=str(tmp_path), max_disk_gb=50, _path="x")

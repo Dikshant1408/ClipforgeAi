@@ -19,6 +19,7 @@ class Config:
     hook_lead_seconds: float
     whisper_model: str
     whisper_device: str
+    whisper_language: str | None
     llm_provider: str
     llm_model: str
     youtube_privacy_status: str
@@ -93,6 +94,7 @@ def load_config(path: str) -> Config:
         hook_lead_seconds=hook_lead,
         whisper_model=d.get("whisper", {}).get("model", "small"),
         whisper_device=d.get("whisper", {}).get("device", "cpu"),
+        whisper_language=d.get("whisper", {}).get("language"),
         llm_provider=d.get("llm", {}).get("provider", "gemini"),
         llm_model=d.get("llm", {}).get("model", "gemini-2.0-flash"),
         youtube_privacy_status=d.get("youtube", {}).get("privacy_status", "public"),

@@ -34,18 +34,29 @@ def _default_model_factory(model_name: str, device: str):
 class Transcriber:
     def __init__(self, model_name: str, device: str,
                  extract_audio: Callable[[str, str], int] = _default_extract_audio,
-                 model_factory: Callable[[str, str], object] = _default_model_factory):
+                 model_factory: Callable[[str, str], object] = _default_model_factory,
+                 language: str | None = None):
         self._model_name = model_name
         self._device = device
         self._extract = extract_audio
         self._factory = model_factory
+        self._language = language
 
     def transcribe(self, video_path: str, audio_path: str) -> list[TranscriptSeg]:
         rc = self._extract(video_path, audio_path)
         if rc != 0:
             raise RuntimeError(f"audio extract failed (rc={rc})")
         model = self._factory(self._model_name, self._device)
-        segments, _info = model.transcribe(audio_path, word_timestamps=True)
+        segments, _info = model.transcribe(
+            audio_path,
+            language=self._language,
+            task="transcribe",
+            word_timestamps=True,
+        )
+        detected = _info.language or self._language or "auto"
+        if self._language is None and detected and detected != "auto":
+            log = __import__("logging").getLogger("clipforge")
+            log.info("transcribe: Whisper detected language=%s for %s", detected, video_path)
         out: list[TranscriptSeg] = []
         for s in segments:
             words = [Word(start=float(w.start), end=float(w.end), text=w.word)

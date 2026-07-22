@@ -53,7 +53,8 @@ def _make_llm(config: Config):
 def build_pipeline(config: Config, dry_run: bool) -> tuple[Database, Pipeline, Monitor]:
     db = Database(str(Path(config.storage_root) / "clipforge.db"))
     downloader = Downloader(config.storage_root)
-    transcriber = Transcriber(config.whisper_model, config.whisper_device)
+    transcriber = Transcriber(config.whisper_model, config.whisper_device,
+                              language=config.whisper_language)
     clipper = Clipper(config.storage_root)
     cleanup = Cleanup(db, config.storage_root, config.max_disk_gb)
     uploader = (DryRunUploader(config.storage_root) if dry_run
@@ -99,12 +100,13 @@ def run_forever(config: Config, dry_run: bool = False) -> None:
                   "interval", minutes=config.monitor_interval_minutes,
                   id="monitor")
     sched.add_job(lambda: _drain(pipe), "interval", seconds=30, id="worker")
-    hh, mm = config.publish_time.split(":")
-    sched.add_job(pipe.publish_daily, "cron", hour=int(hh), minute=int(mm),
-                  id="publish")
+    for i, t in enumerate(config.publish_time):
+        hh, mm = t.split(":")
+        sched.add_job(pipe.publish_daily, "cron", hour=int(hh), minute=int(mm),
+                      id=f"publish_{i}")
     sched.start()
     log.info("clipforge running; publish at %s %s (dry_run=%s)",
-             config.publish_time, config.timezone, dry_run)
+             ", ".join(config.publish_time), config.timezone, dry_run)
     try:
         while True:
             time.sleep(3600)
