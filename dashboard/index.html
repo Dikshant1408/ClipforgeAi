@@ -8,24 +8,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Chart.js CDN for Pipeline Visual Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* ============================================================
-       DESIGN TOKENS – ClipForge AI (OLED Dark / Blue-Amber)
+       DESIGN TOKENS – ClipForge AI (Premium Glass OLED Dark)
        ============================================================ */
     :root {
-      --bg:            #07090f;
-      --bg-surface:    #0e1117;
-      --bg-card:       #13181f;
-      --bg-hover:      #1a2130;
-      --border:        rgba(59,130,246,.15);
-      --border-hover:  rgba(59,130,246,.35);
+      --bg:            #030509;
+      --bg-surface:    #090d16;
+      --bg-card:       #0e1524;
+      --bg-hover:      #172237;
+      --border:        rgba(59, 130, 246, 0.12);
+      --border-hover:  rgba(59, 130, 246, 0.32);
 
       --primary:       #3b82f6;
       --primary-dim:   #1d4ed8;
-      --primary-glow:  rgba(59,130,246,.18);
+      --primary-glow:  rgba(59, 130, 246, 0.18);
       --accent:        #f59e0b;
       --accent-dim:    #d97706;
-      --success:       #22c55e;
+      --success:       #10b981;
       --danger:        #ef4444;
       --warning:       #f59e0b;
       --muted:         #4b5563;
@@ -34,12 +36,12 @@
       --text-secondary: #94a3b8;
       --text-muted:     #475569;
 
-      --radius-sm:  6px;
-      --radius-md:  10px;
-      --radius-lg:  16px;
-      --radius-xl:  22px;
+      --radius-sm:  8px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --radius-xl:  28px;
 
-      --transition: 160ms ease;
+      --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
       --font-sans:  'Fira Sans', system-ui, sans-serif;
       --font-mono:  'Fira Code', monospace;
     }
@@ -50,6 +52,8 @@
 
     body {
       background: var(--bg);
+      background-image: radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.05), transparent 45%),
+                        radial-gradient(circle at 10% 70%, rgba(245, 158, 11, 0.03), transparent 35%);
       color: var(--text-primary);
       font-family: var(--font-sans);
       font-size: 15px;
@@ -59,15 +63,16 @@
     }
 
     /* ============================================================ SCROLLBAR */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 99px; }
 
     /* ============================================================ SIDEBAR */
     #sidebar {
-      width: 230px;
-      min-width: 230px;
-      background: var(--bg-surface);
+      width: 240px;
+      min-width: 240px;
+      background: rgba(9, 13, 22, 0.8);
+      backdrop-filter: blur(16px);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
@@ -80,37 +85,35 @@
     }
 
     .sidebar-logo {
-      padding: 24px 20px 20px;
+      padding: 26px 22px 22px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
-    .sidebar-logo svg { flex-shrink: 0; }
-    .sidebar-logo-text { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    .sidebar-logo-text { font-size: 19px; font-weight: 700; letter-spacing: -.5px; }
     .sidebar-logo-text span { color: var(--primary); }
 
     .sidebar-section-title {
       font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 1.2px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--text-muted);
-      padding: 20px 20px 6px;
+      padding: 22px 22px 6px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 20px;
+      gap: 12px;
+      padding: 11px 22px;
       cursor: pointer;
-      border-radius: 0;
       color: var(--text-secondary);
-      font-size: 14px;
+      font-size: 14.5px;
       font-weight: 500;
-      transition: background var(--transition), color var(--transition);
-      border-left: 2px solid transparent;
+      transition: var(--transition);
+      border-left: 3px solid transparent;
       user-select: none;
     }
     .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
@@ -118,27 +121,29 @@
       background: var(--primary-glow);
       color: var(--primary);
       border-left-color: var(--primary);
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
     }
     .nav-item svg { opacity: .8; flex-shrink: 0; }
 
     .sidebar-status {
       margin-top: auto;
-      padding: 16px 20px;
+      padding: 18px 22px;
       border-top: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--text-muted);
+      font-size: 12.5px;
+      color: var(--text-secondary);
     }
     .status-dot {
       display: inline-block;
-      width: 7px; height: 7px;
+      width: 8px; height: 8px;
       border-radius: 50%;
       background: var(--success);
-      margin-right: 6px;
+      margin-right: 8px;
       animation: pulse 2s infinite;
+      box-shadow: 0 0 8px var(--success);
     }
     @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50% { opacity: .35; }
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .4; transform: scale(0.9); }
     }
 
     /* ============================================================ MAIN */
@@ -152,10 +157,11 @@
 
     /* ============================================================ TOPBAR */
     #topbar {
-      background: var(--bg-surface);
+      background: rgba(9, 13, 22, 0.75);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      height: 60px;
+      padding: 0 32px;
+      height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -163,104 +169,119 @@
       top: 0;
       z-index: 40;
     }
-    #page-title { font-size: 18px; font-weight: 600; }
-    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    #page-title { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
 
     /* ============================================================ BUTTONS */
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 8px 16px;
+      gap: 8px;
+      padding: 9px 18px;
       border-radius: var(--radius-sm);
       font-size: 13.5px;
-      font-weight: 500;
+      font-weight: 600;
       font-family: var(--font-sans);
       border: none;
       cursor: pointer;
-      transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+      transition: var(--transition);
       white-space: nowrap;
     }
-    .btn:active { transform: scale(.97); }
+    .btn:active { transform: scale(.96); }
     .btn:disabled { opacity: .45; cursor: not-allowed; }
 
     .btn-primary {
       background: var(--primary);
       color: #fff;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
     }
-    .btn-primary:hover:not(:disabled) { opacity: .88; box-shadow: 0 0 16px var(--primary-glow); }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4); }
 
     .btn-accent {
       background: var(--accent);
-      color: #000;
+      color: #030509;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
     }
-    .btn-accent:hover:not(:disabled) { opacity: .88; }
+    .btn-accent:hover:not(:disabled) { background: #d97706; box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35); }
 
     .btn-ghost {
       background: transparent;
       border: 1px solid var(--border-hover);
       color: var(--text-secondary);
     }
-    .btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+    .btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); border-color: var(--primary); }
 
     .btn-danger {
       background: transparent;
       border: 1px solid var(--danger);
       color: var(--danger);
     }
-    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.1); }
+    .btn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.15); }
 
-    .btn-sm { padding: 5px 11px; font-size: 12px; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
 
     /* ============================================================ CONTENT */
     #content {
       flex: 1;
       overflow-y: auto;
-      padding: 28px;
+      padding: 32px;
     }
 
     /* ============================================================ PAGES */
     .page { display: none; }
-    .page.active { display: block; }
+    .page.active { display: block; animation: pageFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    @keyframes pageFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ============================================================ CARDS */
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 22px 24px;
-      transition: border-color var(--transition);
+      padding: 24px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
     }
-    .card:hover { border-color: var(--border-hover); }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-hover), transparent);
+      opacity: 0;
+      transition: var(--transition);
+    }
+    .card:hover { border-color: var(--border-hover); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .card:hover::before { opacity: 1; }
 
     .card-title {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: .6px;
-      margin-bottom: 6px;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
     }
     .card-value {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 700;
       font-family: var(--font-mono);
       line-height: 1.1;
+      letter-spacing: -1px;
     }
     .card-sub {
-      font-size: 12px;
+      font-size: 12.5px;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
     /* ============================================================ GRID HELPERS */
-    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    @media (max-width: 900px) {
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    @media (max-width: 1000px) {
       .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
     }
-    @media (max-width: 600px) {
+    @media (max-width: 650px) {
       .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
     }
 
@@ -269,67 +290,69 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
     .section-title {
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -.2px;
     }
 
     /* ============================================================ BADGE */
     .badge {
       display: inline-block;
       font-size: 11px;
-      font-weight: 600;
-      padding: 2px 8px;
+      font-weight: 700;
+      padding: 3px 10px;
       border-radius: 99px;
       font-family: var(--font-mono);
-      letter-spacing: .3px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
     }
-    .badge-blue    { background: rgba(59,130,246,.15); color: #60a5fa; }
-    .badge-green   { background: rgba(34,197,94,.15);  color: #4ade80; }
-    .badge-amber   { background: rgba(245,158,11,.15); color: #fbbf24; }
-    .badge-red     { background: rgba(239,68,68,.15);  color: #f87171; }
-    .badge-gray    { background: rgba(100,116,139,.15);color: #94a3b8; }
-    .badge-purple  { background: rgba(167,139,250,.15);color: #c4b5fd; }
-    .badge-cyan    { background: rgba(34,211,238,.15); color: #67e8f9; }
+    .badge-blue    { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-green   { background: rgba(16,185,129,.15);  color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .badge-amber   { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-red     { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-gray    { background: rgba(148,163,184,.15);color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
+    .badge-purple  { background: rgba(167,139,250,.15);color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
+    .badge-cyan    { background: rgba(34,211,238,.15); color: #67e8f9; border: 1px solid rgba(34,211,238,0.3); }
 
     /* ============================================================ TABLE */
     .table-wrap {
       overflow-x: auto;
       border-radius: var(--radius-md);
       border: 1px solid var(--border);
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-    thead th {
       background: var(--bg-surface);
-      color: var(--text-muted);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+    thead th {
+      background: rgba(9, 13, 22, 0.9);
+      color: var(--text-secondary);
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .6px;
-      padding: 10px 14px;
-      text-align: left;
+      letter-spacing: 1px;
+      padding: 14px 18px;
       border-bottom: 1px solid var(--border);
     }
     tbody tr {
       border-bottom: 1px solid var(--border);
-      transition: background var(--transition);
+      transition: var(--transition);
     }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--bg-hover); }
-    td { padding: 11px 14px; color: var(--text-primary); vertical-align: middle; }
-    .td-mono { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+    td { padding: 14px 18px; color: var(--text-primary); vertical-align: middle; }
+    .td-mono { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-secondary); }
 
     /* ============================================================ FORM */
-    .form-group { margin-bottom: 18px; }
+    .form-group { margin-bottom: 20px; }
     label {
       display: block;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text-secondary);
-      margin-bottom: 6px;
-      letter-spacing: .3px;
+      margin-bottom: 8px;
+      letter-spacing: .4px;
     }
     input, select, textarea {
       width: 100%;
@@ -339,8 +362,8 @@
       color: var(--text-primary);
       font-family: var(--font-sans);
       font-size: 14px;
-      padding: 9px 13px;
-      transition: border-color var(--transition), box-shadow var(--transition);
+      padding: 10px 14px;
+      transition: var(--transition);
       outline: none;
     }
     input:focus, select:focus, textarea:focus {
@@ -348,16 +371,16 @@
       box-shadow: 0 0 0 3px var(--primary-glow);
     }
     select { cursor: pointer; }
-    textarea { resize: vertical; min-height: 80px; }
+    textarea { resize: vertical; min-height: 90px; }
     input[type="number"] { font-family: var(--font-mono); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
     @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
     /* ============================================================ TOGGLE */
     .toggle-wrap { display: flex; align-items: center; gap: 10px; }
     .toggle {
       position: relative;
-      width: 42px; height: 24px;
+      width: 44px; height: 24px;
       cursor: pointer;
     }
     .toggle input { opacity: 0; width: 0; height: 0; }
@@ -366,7 +389,7 @@
       inset: 0;
       background: var(--muted);
       border-radius: 99px;
-      transition: background var(--transition);
+      transition: var(--transition);
     }
     .toggle-slider::before {
       content: '';
@@ -375,84 +398,86 @@
       left: 3px; top: 3px;
       background: #fff;
       border-radius: 50%;
-      transition: transform var(--transition);
+      transition: var(--transition);
     }
     .toggle input:checked + .toggle-slider { background: var(--primary); }
-    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
     .toggle-label { font-size: 14px; color: var(--text-primary); }
 
     /* ============================================================ ALERT / TOAST */
     #toast-container {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 32px;
+      right: 32px;
       z-index: 9999;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       pointer-events: none;
     }
     .toast {
       background: var(--bg-card);
       border: 1px solid var(--border-hover);
       border-radius: var(--radius-md);
-      padding: 13px 18px;
-      font-size: 13.5px;
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 500;
       display: flex;
       align-items: center;
-      gap: 10px;
-      min-width: 260px;
-      max-width: 380px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.6);
-      animation: slideUp .2s ease-out;
+      gap: 12px;
+      min-width: 280px;
+      max-width: 400px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.7);
+      animation: slideUp .22s cubic-bezier(0.4, 0, 0.2, 1);
       pointer-events: all;
     }
-    .toast.success { border-left: 3px solid var(--success); }
-    .toast.error   { border-left: 3px solid var(--danger); }
-    .toast.info    { border-left: 3px solid var(--primary); }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error   { border-left: 4px solid var(--danger); }
+    .toast.info    { border-left: 4px solid var(--primary); }
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(12px); }
+      from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
     /* ============================================================ MODAL */
     .modal-overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.65);
-      backdrop-filter: blur(6px);
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
       z-index: 1000;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
-      animation: fadeIn .15s;
+      animation: fadeIn .18s;
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     .modal {
       background: var(--bg-card);
       border: 1px solid var(--border-hover);
-      border-radius: var(--radius-xl);
-      padding: 28px 30px;
+      border-radius: var(--radius-lg);
+      padding: 30px;
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       max-height: 90dvh;
       overflow-y: auto;
-      animation: scaleIn .18s ease-out;
+      animation: scaleIn .22s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     }
     @keyframes scaleIn {
-      from { opacity: 0; transform: scale(.95); }
+      from { opacity: 0; transform: scale(.92); }
       to   { opacity: 1; transform: scale(1); }
     }
     .modal-title {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 700;
-      margin-bottom: 22px;
+      margin-bottom: 24px;
     }
     .modal-footer {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       justify-content: flex-end;
-      margin-top: 24px;
+      margin-top: 28px;
     }
 
     /* ============================================================ PIPELINE PROGRESS */
@@ -463,59 +488,58 @@
       background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 16px;
+      padding: 18px;
       overflow-x: auto;
-      margin-bottom: 28px;
+      margin-bottom: 30px;
     }
     .pipeline-step {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       flex: 1;
-      min-width: 70px;
+      min-width: 76px;
     }
     .pipeline-step-dot {
-      width: 36px; height: 36px;
+      width: 38px; height: 38px;
       border-radius: 50%;
       border: 2px solid var(--border-hover);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
       font-family: var(--font-mono);
-      transition: all var(--transition);
+      transition: var(--transition);
       background: var(--bg-card);
       position: relative;
       z-index: 1;
     }
-    .pipeline-step-dot.has-data { border-color: var(--primary); color: var(--primary); background: var(--primary-glow); }
-    .pipeline-step-dot.has-fail { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,.1); }
-    .pipeline-step-label { font-size: 10px; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: .4px; }
-    .pipeline-step-count { font-size: 13px; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); }
+    .pipeline-step-dot.has-data { border-color: var(--primary); color: var(--primary); background: var(--primary-glow); box-shadow: 0 0 10px rgba(59,130,246,0.25); }
+    .pipeline-step-dot.has-fail { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,.15); box-shadow: 0 0 10px rgba(239,68,68,0.25); }
+    .pipeline-step-label { font-size: 10px; color: var(--text-secondary); text-align: center; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
     .pipeline-connector {
       flex: 0 0 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--border-hover);
-      padding-top: 10px;
+      color: var(--text-muted);
+      padding-top: 12px;
     }
 
     /* ============================================================ DISK USAGE */
-    .disk-bar-wrap { margin-top: 12px; }
+    .disk-bar-wrap { margin-top: 14px; }
     .disk-bar-track {
-      height: 6px;
+      height: 8px;
       background: var(--bg-hover);
       border-radius: 99px;
       overflow: hidden;
     }
     .disk-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--primary), var(--accent));
+      background: linear-gradient(90deg, var(--primary), var(--success));
       border-radius: 99px;
-      transition: width .6s ease;
+      transition: width .8s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* ============================================================ CHANNEL CARD */
@@ -523,80 +547,86 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 18px 20px;
+      padding: 20px;
       display: flex;
       align-items: center;
-      gap: 16px;
-      transition: border-color var(--transition), background var(--transition);
+      gap: 18px;
+      transition: var(--transition);
     }
     .channel-card:hover { border-color: var(--border-hover); background: var(--bg-hover); }
     .channel-avatar {
-      width: 44px; height: 44px;
+      width: 48px; height: 48px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--primary-dim), var(--primary));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 700;
       color: #fff;
       flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(59,130,246,0.3);
     }
     .channel-info { flex: 1; min-width: 0; }
-    .channel-name { font-weight: 600; font-size: 15px; }
-    .channel-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
-    .channel-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .channel-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .channel-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); margin-top: 4px; word-break: break-all; }
+    .channel-actions { display: flex; gap: 10px; flex-shrink: 0; }
 
     /* ============================================================ RECENT PUBLISHED */
     .recent-item {
       display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      padding: 12px 0;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 0;
       border-bottom: 1px solid var(--border);
     }
     .recent-item:last-child { border-bottom: none; }
     .recent-thumb {
-      width: 48px; height: 48px;
-      border-radius: var(--radius-sm);
-      background: var(--bg-hover);
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--primary-glow);
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       color: var(--primary);
-      font-size: 20px;
+      font-size: 18px;
+      border: 1px solid var(--border);
+      transition: var(--transition);
     }
-    .recent-title { font-size: 13.5px; font-weight: 500; margin-bottom: 3px; }
-    .recent-meta { font-size: 11.5px; color: var(--text-muted); }
+    .recent-item:hover .recent-thumb { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .recent-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .recent-meta { font-size: 12px; color: var(--text-secondary); }
 
     /* ============================================================ SETTINGS TABS */
     .settings-tabs {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 4px;
-      margin-bottom: 24px;
+      padding: 6px;
+      margin-bottom: 26px;
     }
     .settings-tab {
       flex: 1;
-      padding: 8px 14px;
+      padding: 10px 14px;
       text-align: center;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-muted);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
       border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: all var(--transition);
+      transition: var(--transition);
     }
+    .settings-tab:hover { color: var(--text-primary); }
     .settings-tab.active {
       background: var(--primary);
       color: #fff;
+      box-shadow: 0 4px 10px rgba(59,130,246,0.25);
     }
     .settings-panel { display: none; }
-    .settings-panel.active { display: block; }
+    .settings-panel.active { display: block; animation: pageFadeIn 0.25s; }
 
     /* ============================================================ SEARCH */
     .search-box {
@@ -604,25 +634,25 @@
     }
     .search-box svg {
       position: absolute;
-      left: 12px;
+      left: 14px;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       pointer-events: none;
     }
     .search-box input {
-      padding-left: 38px;
+      padding-left: 42px;
     }
 
     /* ============================================================ SPINNER */
     .spinner {
-      width: 16px; height: 16px;
+      width: 18px; height: 18px;
       border: 2px solid rgba(255,255,255,.2);
       border-top-color: #fff;
       border-radius: 50%;
       animation: spin .6s linear infinite;
       display: inline-block;
-      flex-shrink: 0;
+      vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -630,29 +660,80 @@
     .empty-state {
       text-align: center;
       padding: 60px 20px;
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
-    .empty-state svg { margin: 0 auto 16px; opacity: .4; display: block; }
+    .empty-state svg { margin: 0 auto 18px; opacity: .4; display: block; }
     .empty-state p { font-size: 15px; }
 
     /* ============================================================ FILTER BAR */
     .filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .filter-chip {
-      padding: 5px 13px;
+      padding: 6px 14px;
       border-radius: 99px;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 12.5px;
+      font-weight: 700;
       border: 1px solid var(--border-hover);
       color: var(--text-secondary);
       cursor: pointer;
-      transition: all var(--transition);
+      transition: var(--transition);
       font-family: var(--font-mono);
       user-select: none;
+      text-transform: uppercase;
     }
-    .filter-chip:hover { background: var(--bg-hover); }
-    .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .filter-chip:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 10px rgba(59,130,246,0.25); }
 
-    /* ============================================================ MB */
+    /* ============================================================ LOG CONSOLE TERMINAL */
+    .log-console-wrap {
+      background: #010204;
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+      box-shadow: inset 0 4px 20px rgba(0,0,0,0.8);
+    }
+    .log-console-header {
+      background: #090e18;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .log-console-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .console-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .log-console-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #cbd5e1;
+    }
+    .log-console-body div {
+      margin-bottom: 6px;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .log-info { color: #34d399; }
+    .log-warn { color: #fbbf24; }
+    .log-error { color: #f87171; }
+    
+    /* ============================================================ MARGINS & HELPER */
     .mb-4 { margin-bottom: 16px; }
     .mb-6 { margin-bottom: 24px; }
     .mb-8 { margin-bottom: 32px; }
@@ -667,7 +748,7 @@
 <!-- ============================================================ SIDEBAR -->
 <aside id="sidebar">
   <div class="sidebar-logo">
-    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+    <svg width="32" height="32" viewBox="0 0 30 30" fill="none">
       <rect width="30" height="30" rx="8" fill="#1d4ed8"/>
       <path d="M8 10l8 5-8 5V10z" fill="#fff"/>
       <rect x="18" y="10" width="4" height="10" rx="1" fill="#f59e0b"/>
@@ -692,18 +773,22 @@
   </div>
   <div class="nav-item" onclick="navigate('videos')" id="nav-videos">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-    Videos
+    Videos (Ready)
   </div>
 
   <div class="sidebar-section-title">System</div>
+  <div class="nav-item" onclick="navigate('logs')" id="nav-logs">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 14 15 20 9"/><polyline points="14 9 20 9 20 15"/></svg>
+    System Logs
+  </div>
   <div class="nav-item" onclick="navigate('settings')" id="nav-settings">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </div>
 
   <div class="sidebar-status">
-    <div><span class="status-dot"></span>Scheduler running</div>
-    <div style="margin-top:4px; font-size: 11px;" id="sidebar-time"></div>
+    <div><span class="status-dot"></span>Active Poller</div>
+    <div style="margin-top:6px; font-size: 11px; font-family: var(--font-mono);" id="sidebar-time"></div>
   </div>
 </aside>
 
@@ -739,7 +824,7 @@
         <div class="card">
           <div class="card-title">Ready to Publish</div>
           <div class="card-value" style="color:var(--success)" id="stat-ready">—</div>
-          <div class="card-sub">clipped &amp; reviewed</div>
+          <div class="card-sub">clipped &amp; Override meta</div>
         </div>
         <div class="card">
           <div class="card-title">Published</div>
@@ -753,48 +838,42 @@
         </div>
       </div>
 
-      <!-- Pipeline visual -->
-      <div class="mb-6">
-        <div class="section-header mb-4">
-          <div class="section-title">Pipeline Overview</div>
-          <button class="btn btn-ghost btn-sm" onclick="loadStats()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.14"/></svg>
-            Refresh
-          </button>
-        </div>
-        <div class="pipeline-bar" id="pipeline-bar">
-          <!-- built by JS -->
-        </div>
-      </div>
-
-      <!-- 2-column: disk + recent -->
-      <div class="grid-2">
-        <!-- Disk usage -->
-        <div class="card">
-          <div class="card-title">Disk Usage</div>
-          <div style="display:flex; align-items:baseline; gap:8px; margin-top:8px;">
-            <div class="card-value" id="disk-used">—</div>
-            <div style="font-size:15px; color:var(--text-muted)" id="disk-max">/ — GB</div>
+      <!-- 2-column: Chart Visuals + System Details -->
+      <div class="grid-2 mb-6">
+        <!-- Visual Distribution Chart -->
+        <div class="card" style="display:flex; flex-direction:column; height:320px;">
+          <div class="card-title">Pipeline Distribution</div>
+          <div style="flex:1; position:relative; max-height:220px; margin-top:10px;">
+            <canvas id="statusChart"></canvas>
           </div>
-          <div class="disk-bar-wrap">
-            <div class="disk-bar-track">
-              <div class="disk-bar-fill" id="disk-bar" style="width:0%"></div>
+        </div>
+
+        <!-- Disk and System Settings -->
+        <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; height:320px;">
+          <div>
+            <div class="card-title">Disk Storage</div>
+            <div style="display:flex; align-items:baseline; gap:8px; margin-top:8px;">
+              <div class="card-value" id="disk-used">—</div>
+              <div style="font-size:16px; color:var(--text-secondary)" id="disk-max">/ — GB</div>
             </div>
+            <div class="disk-bar-wrap">
+              <div class="disk-bar-track">
+                <div class="disk-bar-fill" id="disk-bar" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="card-sub" id="disk-pct">— % capacity used</div>
           </div>
-          <div class="card-sub" id="disk-pct">— % used</div>
-        </div>
-
-        <!-- Schedule -->
-        <div class="card">
-          <div class="card-title">Publish Schedule</div>
-          <div id="schedule-display" style="margin-top:10px;"></div>
+          <div>
+            <div class="card-title" style="margin-top:20px;">Publish Schedule</div>
+            <div id="schedule-display" style="margin-top:10px;"></div>
+          </div>
         </div>
       </div>
 
       <!-- Recent published -->
       <div class="mt-4">
-        <div class="section-header mb-4" style="margin-top:24px;">
-          <div class="section-title">Recently Published</div>
+        <div class="section-header mb-4">
+          <div class="section-title">Recently Published Shorts</div>
         </div>
         <div class="card">
           <div id="recent-list">
@@ -813,7 +892,7 @@
           Add Channel
         </button>
       </div>
-      <div id="channels-list" style="display:flex; flex-direction:column; gap:12px;">
+      <div id="channels-list" style="display:flex; flex-direction:column; gap:14px;">
         <div class="empty-state"><p>Loading…</p></div>
       </div>
     </div>
@@ -821,7 +900,7 @@
     <!-- ======================================================== PAGE: PIPELINE -->
     <div class="page" id="page-pipeline">
       <div class="section-header mb-4">
-        <div class="section-title">Pipeline Status</div>
+        <div class="section-title">Pipeline Control Desk</div>
         <button class="btn btn-ghost btn-sm" onclick="loadPipelineVideos()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.14"/></svg>
           Refresh
@@ -830,7 +909,7 @@
 
       <div class="pipeline-bar" id="pipeline-bar-2" style="margin-bottom:24px;"></div>
 
-      <div class="filter-bar mb-4" id="pipeline-filter-bar">
+      <div class="filter-bar mb-6" id="pipeline-filter-bar">
         <div class="filter-chip active" onclick="filterPipeline('ALL', this)">All</div>
         <div class="filter-chip" onclick="filterPipeline('DISCOVERED', this)">Discovered</div>
         <div class="filter-chip" onclick="filterPipeline('DOWNLOADED', this)">Downloaded</div>
@@ -846,17 +925,17 @@
         <table>
           <thead>
             <tr>
-              <th>Title</th>
+              <th>Title / Source Video</th>
               <th>Channel</th>
               <th>Status</th>
               <th>Score</th>
               <th>Retries</th>
               <th>Discovered</th>
-              <th>Actions</th>
+              <th style="width:240px;">Actions</th>
             </tr>
           </thead>
           <tbody id="pipeline-tbody">
-            <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">Loading…</td></tr>
+            <tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:30px;">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -865,9 +944,9 @@
     <!-- ======================================================== PAGE: VIDEOS (READY queue) -->
     <div class="page" id="page-videos">
       <div class="section-header mb-6">
-        <div class="section-title">Video Queue</div>
+        <div class="section-title">Publish Queue</div>
         <div class="flex gap-2 items-center">
-          <div class="search-box" style="width:240px;">
+          <div class="search-box" style="width:260px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="video-search" placeholder="Search videos…" oninput="filterVideos()" />
           </div>
@@ -878,7 +957,7 @@
         <table>
           <thead>
             <tr>
-              <th>Title / Meta Title</th>
+              <th>Short Title / Meta overridden</th>
               <th>Channel</th>
               <th>Status</th>
               <th>Score</th>
@@ -887,16 +966,51 @@
             </tr>
           </thead>
           <tbody id="videos-tbody">
-            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Loading…</td></tr>
+            <tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:30px;">Loading…</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ======================================================== PAGE: SYSTEM LOGS -->
+    <div class="page" id="page-logs">
+      <div class="section-header mb-4">
+        <div class="section-title">System Console Logs</div>
+        <div class="flex gap-2 items-center">
+          <div class="toggle-wrap" style="margin-right:16px;">
+            <label class="toggle">
+              <input type="checkbox" id="log-autoscroll" checked onchange="autoScrollLogs = this.checked;" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label" style="font-size:13px; font-weight:600;">Auto Scroll</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadLogs()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.14"/></svg>
+            Refresh Logs
+          </button>
+        </div>
+      </div>
+
+      <div class="log-console-wrap">
+        <div class="log-console-header">
+          <div class="log-console-title">
+            <span class="console-dot" style="background:#ef4444"></span>
+            <span class="console-dot" style="background:#fbbf24"></span>
+            <span class="console-dot" style="background:#10b981"></span>
+            <span style="margin-left:6px;">clipforge-system-terminal</span>
+          </div>
+          <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-secondary)">stdout / stderr streams</div>
+        </div>
+        <div class="log-console-body" id="log-console">
+          <div style="color:var(--text-muted)">Connecting to logs stream…</div>
+        </div>
       </div>
     </div>
 
     <!-- ======================================================== PAGE: SETTINGS -->
     <div class="page" id="page-settings">
       <div class="section-header mb-4">
-        <div class="section-title">Settings</div>
+        <div class="section-title">Settings Configuration</div>
         <button class="btn btn-primary" onclick="saveSettings()" id="btn-save-settings">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
           Save All Settings
@@ -927,7 +1041,7 @@
         <div class="form-group">
           <label>Publish Times (comma-separated, HH:MM 24h)</label>
           <input type="text" id="cfg-publish-times" placeholder="12:00, 18:00" />
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Example: 09:00, 15:00, 21:00</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Example: 12:00, 18:00</div>
         </div>
       </div>
 
@@ -1026,7 +1140,7 @@
           <div class="form-group">
             <label>Category ID</label>
             <input type="text" id="cfg-yt-category" placeholder="20 = Gaming" />
-            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">1=Film&TV, 10=Music, 20=Gaming, 22=People, 24=Entertainment</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">1=Film&TV, 10=Music, 20=Gaming, 22=People, 24=Entertainment</div>
           </div>
         </div>
       </div>
@@ -1044,12 +1158,12 @@
     <div class="modal-title">Add Source Channel</div>
     <div class="form-group">
       <label>Channel Name *</label>
-      <input type="text" id="ch-name" placeholder="e.g. VCT Pacific" />
+      <input type="text" id="ch-name" placeholder="e.g. Tarik" />
     </div>
     <div class="form-group">
       <label>YouTube Channel ID *</label>
       <input type="text" id="ch-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" />
-      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Find it in the channel URL or via YouTube Data API.</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Find it in the channel URL or via channel settings.</div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1128,6 +1242,19 @@
   </div>
 </div>
 
+<!-- Preview Video Modal -->
+<div class="modal-overlay" id="modal-preview-video" style="display:none;" onclick="closePreviewModal(event)">
+  <div class="modal" style="max-width:380px; padding:20px; display:flex; flex-direction:column; align-items:center;" onclick="event.stopPropagation()">
+    <div class="modal-title" id="preview-video-title" style="margin-bottom:12px; width:100%; text-align:center; font-size:16px;">Preview Clip</div>
+    <div style="width:100%; aspect-ratio: 9/16; background:#000; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border-hover); position:relative; box-shadow:0 12px 30px rgba(0,0,0,0.8);">
+      <video id="preview-video-player" style="width:100%; height:100%; object-fit:cover;" controls autoplay></video>
+    </div>
+    <div class="modal-footer" style="margin-top:16px; width:100%; padding:0;">
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="closePreviewModalDirect()">Close Preview</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
@@ -1136,7 +1263,11 @@
    STATE
    ============================================================ */
 let allVideos = [];
+let allChannels = [];
 let currentFilter = 'ALL';
+let statusChart = null;
+let logInterval = null;
+let autoScrollLogs = true;
 
 const STATUS_COLORS = {
   DISCOVERED:  'badge-gray',
@@ -1176,13 +1307,21 @@ function navigate(page) {
   document.getElementById('nav-' + page).classList.add('active');
 
   const titles = {
-    overview: 'Dashboard',
+    overview: 'Control Center',
     channels: 'Source Channels',
-    pipeline: 'Pipeline',
-    videos:   'Video Queue',
-    settings: 'Settings',
+    pipeline: 'Pipeline Status Desk',
+    videos:   'Shorts Ready Queue',
+    logs:     'System Terminal Streams',
+    settings: 'Settings Configurator',
   };
   document.getElementById('page-title').textContent = titles[page] || page;
+
+  // Handle active states and polling
+  if (page === 'logs') {
+    startLogPolling();
+  } else {
+    stopLogPolling();
+  }
 
   if (page === 'overview')  { loadStats(); }
   if (page === 'channels')  { loadChannels(); }
@@ -1217,9 +1356,9 @@ async function api(path, method = 'GET', body = null) {
    ============================================================ */
 function toast(msg, type = 'info') {
   const icons = {
-    success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
-    error:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-    info:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+    error:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    info:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
   };
   const el = document.createElement('div');
   el.className = `toast ${type}`;
@@ -1229,12 +1368,142 @@ function toast(msg, type = 'info') {
 }
 
 /* ============================================================
-   MODALS
+   MODALS & PREVIEWS
    ============================================================ */
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModalById(id) { document.getElementById(id).style.display = 'none'; }
 function closeModal(id, e) {
   if (e.target === document.getElementById(id)) closeModalById(id);
+}
+
+function openPreview(id) {
+  const player = document.getElementById('preview-video-player');
+  const modalTitle = document.getElementById('preview-video-title');
+  if (!player || !modalTitle) return;
+
+  const v = allVideos.find(x => x.video_id === id);
+  const title = v ? (v.meta_title || v.title) : 'Preview Clip';
+  
+  // Expose local file endpoint via Flask server static serving
+  player.src = `/storage/clips/${id}.mp4`;
+  modalTitle.textContent = title;
+  openModal('modal-preview-video');
+}
+
+function closePreviewModal(e) {
+  if (e.target === document.getElementById('modal-preview-video')) {
+    closePreviewModalDirect();
+  }
+}
+
+function closePreviewModalDirect() {
+  const player = document.getElementById('preview-video-player');
+  if (player) {
+    player.pause();
+    player.src = '';
+  }
+  closeModalById('modal-preview-video');
+}
+
+/* ============================================================
+   SYSTEM LOGS VIEW
+   ============================================================ */
+function startLogPolling() {
+  if (logInterval) clearInterval(logInterval);
+  loadLogs();
+  logInterval = setInterval(loadLogs, 2500);
+}
+
+function stopLogPolling() {
+  if (logInterval) {
+    clearInterval(logInterval);
+    logInterval = null;
+  }
+}
+
+async function loadLogs() {
+  try {
+    const lines = await api('/api/logs?limit=150');
+    const consoleEl = document.getElementById('log-console');
+    if (!consoleEl) return;
+    
+    if (!lines || !lines.length) {
+      consoleEl.innerHTML = '<div style="color:var(--text-muted); font-family:var(--font-mono)">No logs available yet. Running scheduler tasks will populate events.</div>';
+      return;
+    }
+    
+    consoleEl.innerHTML = lines.map(line => {
+      let cssClass = '';
+      if (line.includes(' ERROR ')) cssClass = 'log-error';
+      else if (line.includes(' WARNING ') || line.includes(' WARN ')) cssClass = 'log-warn';
+      else if (line.includes(' INFO ')) cssClass = 'log-info';
+      return `<div class="${cssClass}">${esc(line)}</div>`;
+    }).join('');
+    
+    if (autoScrollLogs) {
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+  } catch (e) {
+    console.error('Error fetching logs:', e);
+  }
+}
+
+/* ============================================================
+   CHARTS & STATISTICS
+   ============================================================ */
+function updateStatusChart(statusCounts) {
+  const ctx = document.getElementById('statusChart');
+  if (!ctx) return;
+
+  const labels = ['Ready to Publish', 'Published', 'Failed Stages', 'In Pipeline'];
+  
+  // Calculate pipeline items (any stage except ready, published, failed)
+  let pipelineCount = 0;
+  const pipeKeys = ['DISCOVERED', 'DOWNLOADING', 'DOWNLOADED', 'TRANSCRIBING', 'TRANSCRIBED', 'HIGHLIGHTING', 'HIGHLIGHTED', 'CLIPPING', 'CLIPPED', 'METADATA', 'PUBLISHING'];
+  pipeKeys.forEach(k => {
+    pipelineCount += (statusCounts[k] || 0);
+  });
+
+  const data = [
+    statusCounts.READY || 0,
+    statusCounts.PUBLISHED || 0,
+    statusCounts.FAILED || 0,
+    pipelineCount
+  ];
+
+  if (statusChart) {
+    statusChart.data.datasets[0].data = data;
+    statusChart.update();
+  } else {
+    statusChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: ['#10b981', '#3b82f6', '#ef4444', '#f59e0b'],
+          borderColor: '#0e1524',
+          borderWidth: 2,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#94a3b8',
+              font: { family: 'Fira Sans', size: 12, weight: '500' },
+              padding: 14
+            }
+          }
+        }
+      }
+    });
+  }
 }
 
 /* ============================================================
@@ -1250,47 +1519,49 @@ async function loadStats() {
   document.getElementById('stat-published').textContent = s.PUBLISHED || 0;
   document.getElementById('stat-failed').textContent = s.FAILED || 0;
 
-  // Disk
+  // Disk Progress
   const used = data.disk_used_gb;
   const max  = data.max_disk_gb;
   const pct  = max > 0 ? Math.min(100, (used / max) * 100) : 0;
   document.getElementById('disk-used').textContent = used.toFixed(2) + ' GB';
   document.getElementById('disk-max').textContent  = '/ ' + max + ' GB';
   document.getElementById('disk-bar').style.width  = pct.toFixed(1) + '%';
-  document.getElementById('disk-pct').textContent  = pct.toFixed(1) + '% used';
+  document.getElementById('disk-pct').textContent  = pct.toFixed(1) + '% space used';
 
-  // Pipeline bar
-  renderPipelineBar('pipeline-bar', s);
+  // Render Charts
+  updateStatusChart(s);
+
+  // Render bars
   renderPipelineBar('pipeline-bar-2', s);
 
-  // Recent published
+  // Recent published list
   const recent = data.recent_published || [];
   const recEl = document.getElementById('recent-list');
   if (!recent.length) {
-    recEl.innerHTML = '<div class="empty-state"><p>No published videos yet.</p></div>';
+    recEl.innerHTML = '<div class="empty-state"><p>No published videos recorded yet.</p></div>';
   } else {
     recEl.innerHTML = recent.map(v => `
       <div class="recent-item">
-        <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" class="recent-thumb" style="text-decoration:none; color:var(--primary);">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" class="recent-thumb" style="text-decoration:none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </a>
         <div>
           <div class="recent-title">${esc(v.title)}</div>
-          <div class="recent-meta">${esc(v.channel_name)} · ${v.video_id} · ${formatDate(v.discovered_at)}</div>
+          <div class="recent-meta">${esc(v.channel_name)} · Video ID: ${v.video_id} · Discovered: ${formatDate(v.discovered_at)}</div>
         </div>
       </div>
     `).join('');
   }
 
-  // Schedule
+  // Schedule Configuration Details
   const cfg = await api('/api/config');
   const schedEl = document.getElementById('schedule-display');
   if (cfg.publish_time) {
     schedEl.innerHTML = cfg.publish_time.map(t => `
-      <div style="display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid var(--border);">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span style="font-family:var(--font-mono); font-size:16px; font-weight:600; color:var(--primary)">${t}</span>
-        <span style="font-size:12px; color:var(--text-muted)">${cfg.timezone}</span>
+      <div style="display:inline-flex; align-items:center; gap:8px; margin-right:16px; padding: 6px 12px; background:var(--bg-hover); border:1px solid var(--border); border-radius:6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span style="font-family:var(--font-mono); font-size:14px; font-weight:700; color:var(--primary)">${t}</span>
+        <span style="font-size:11px; color:var(--text-secondary)">${cfg.timezone}</span>
       </div>
     `).join('');
   }
@@ -1312,7 +1583,7 @@ function renderPipelineBar(id, s) {
     `;
     if (i < PIPELINE_STAGES.length - 1) {
       html += `<div class="pipeline-connector">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
     }
   });
@@ -1323,13 +1594,14 @@ function renderPipelineBar(id, s) {
    CHANNELS
    ============================================================ */
 async function loadChannels() {
-  const channels = await api('/api/channels');
+  allChannels = await api('/api/channels');
   const el = document.getElementById('channels-list');
+  const channels = allChannels;
 
   if (!channels.length) {
     el.innerHTML = `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <p>No channels configured. Add one to get started.</p>
+      <p>No channels configured. Add source channels to pull clips.</p>
     </div>`;
     return;
   }
@@ -1340,17 +1612,17 @@ async function loadChannels() {
       <div class="channel-info">
         <div class="channel-name">${esc(ch.name)}
           ${ch.enabled
-            ? '<span class="badge badge-green" style="margin-left:8px;">enabled</span>'
-            : '<span class="badge badge-gray" style="margin-left:8px;">disabled</span>'}
+            ? '<span class="badge badge-green" style="margin-left:8px; font-size:9px; padding:1px 6px;">enabled</span>'
+            : '<span class="badge badge-gray" style="margin-left:8px; font-size:9px; padding:1px 6px;">disabled</span>'}
         </div>
-        <div class="channel-id">${esc(ch.channel_id)} · priority ${ch.priority}</div>
+        <div class="channel-id">${esc(ch.channel_id)} · Priority Rank ${ch.priority}</div>
       </div>
       <div class="channel-actions">
-        <button class="btn btn-ghost btn-sm" onclick="openEditChannel('${esc(ch.channel_id)}', '${esc(ch.name)}', ${ch.priority}, ${ch.enabled})">
+        <button class="btn btn-ghost btn-sm" onclick="openEditChannel('${ch.channel_id}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Edit
         </button>
-        <button class="btn btn-danger btn-sm" onclick="deleteChannel('${esc(ch.channel_id)}', '${esc(ch.name)}')">
+        <button class="btn btn-danger btn-sm" onclick="deleteChannel('${ch.channel_id}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           Remove
         </button>
@@ -1389,11 +1661,13 @@ async function submitAddChannel() {
   }
 }
 
-function openEditChannel(id, name, priority, enabled) {
+function openEditChannel(id) {
+  const ch = allChannels.find(x => x.channel_id === id);
+  if (!ch) return;
   document.getElementById('edit-ch-id-val').value = id;
-  document.getElementById('edit-ch-name').value = name;
-  document.getElementById('edit-ch-priority').value = priority;
-  document.getElementById('edit-ch-enabled').checked = enabled;
+  document.getElementById('edit-ch-name').value = ch.name;
+  document.getElementById('edit-ch-priority').value = ch.priority;
+  document.getElementById('edit-ch-enabled').checked = ch.enabled;
   openModal('modal-edit-channel');
 }
 
@@ -1410,8 +1684,10 @@ async function submitEditChannel() {
   loadChannels();
 }
 
-async function deleteChannel(id, name) {
-  if (!confirm(`Remove channel "${name}"? This will not delete existing video records.`)) return;
+async function deleteChannel(id) {
+  const ch = allChannels.find(x => x.channel_id === id);
+  if (!ch) return;
+  if (!confirm(`Remove channel "${ch.name}"? This will not delete existing video records.`)) return;
   const res = await api(`/api/channels/${id}`, 'DELETE');
   if (res.error) { toast(res.error, 'error'); return; }
   toast('Channel removed.', 'success');
@@ -1439,34 +1715,73 @@ function filterPipeline(status, el) {
   loadPipelineVideos();
 }
 
+// Trigger Specific pipeline stage execution manually
+async function advanceVideo(id, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="width:12px; height:12px;"></span>';
+  }
+  try {
+    const res = await api(`/api/videos/${id}/advance`, 'POST');
+    if (res.error) {
+      toast(`Stage failed: ${res.error}`, 'error');
+      loadPipelineVideos();
+      return;
+    }
+    if (res.ok) {
+      toast(`Advanced successfully from ${res.old_status} to ${res.new_status}!`, 'success');
+      loadPipelineVideos();
+      loadStats();
+    } else {
+      toast(res.message || 'Could not advance.', 'info');
+    }
+  } catch (e) {
+    toast(`API error: ${e.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = 'Advance';
+    }
+  }
+}
+
 function renderPipelineTable(videos) {
   const tbody = document.getElementById('pipeline-tbody');
   if (!videos || !videos.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px;">No videos found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:30px;">No video records found in this stage filter.</td></tr>`;
     return;
   }
-  tbody.innerHTML = videos.map(v => `
-    <tr>
-      <td>
-        <div style="font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-             title="${esc(v.title)}">${esc(v.title)}</div>
-        ${v.meta_title ? `<div style="font-size:11px;color:var(--text-muted);">${esc(v.meta_title)}</div>` : ''}
-      </td>
-      <td style="font-size:12.5px;">${esc(v.channel_name)}</td>
-      <td><span class="badge ${STATUS_COLORS[v.status] || 'badge-gray'}">${v.status}</span></td>
-      <td class="td-mono">${v.rank_score ? v.rank_score.toFixed(2) : '—'}</td>
-      <td class="td-mono" style="color:${v.retry_count > 0 ? 'var(--warning)' : 'var(--text-muted)'};">${v.retry_count}</td>
-      <td class="td-mono">${formatDate(v.discovered_at)}</td>
-      <td>
-        <div style="display:flex;gap:6px;">
-          ${v.status === 'FAILED' ? `<button class="btn btn-ghost btn-sm" onclick="resetVideo('${v.video_id}')">Retry</button>` : ''}
-          ${v.status !== 'PUBLISHED' ? `<button class="btn btn-ghost btn-sm" onclick="openEditVideoModal('${v.video_id}', '${esc(v.meta_title)}', '${esc(v.meta_description)}', '${esc(v.meta_tags)}')">Meta</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="deleteVideo('${v.video_id}')">Del</button>
-        </div>
-        ${v.last_error ? `<div title="${esc(v.last_error)}" style="font-size:10px;color:var(--danger);margin-top:3px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">⚠ ${esc(v.last_error)}</div>` : ''}
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = videos.map(v => {
+    // Show Preview button only for CLIPPED or READY
+    const showPreview = ['CLIPPED', 'READY'].includes(v.status);
+    // Show manual advance stage for states that are not ready/published
+    const showAdvance = !['READY', 'PUBLISHED', 'PUBLISHING'].includes(v.status);
+
+    return `
+      <tr>
+        <td>
+          <div style="font-weight:700;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+               title="${esc(v.title)}">${esc(v.title)}</div>
+          ${v.meta_title ? `<div style="font-size:11.5px;color:var(--text-secondary);">${esc(v.meta_title)}</div>` : ''}
+        </td>
+        <td style="font-size:12.5px;">${esc(v.channel_name)}</td>
+        <td><span class="badge ${STATUS_COLORS[v.status] || 'badge-gray'}">${v.status}</span></td>
+        <td class="td-mono">${v.rank_score ? v.rank_score.toFixed(3) : '—'}</td>
+        <td class="td-mono" style="color:${v.retry_count > 0 ? 'var(--danger)' : 'var(--text-muted)'};">${v.retry_count}</td>
+        <td class="td-mono">${formatDate(v.discovered_at)}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            ${showAdvance ? `<button class="btn btn-ghost btn-sm" style="color:var(--accent); border-color:var(--accent);" onclick="advanceVideo('${v.video_id}', this)">Advance</button>` : ''}
+            ${showPreview ? `<button class="btn btn-primary btn-sm" onclick="openPreview('${v.video_id}')">Play</button>` : ''}
+            ${v.status !== 'PUBLISHED' ? `<button class="btn btn-ghost btn-sm" onclick="openEditVideoModal('${v.video_id}')">Meta</button>` : ''}
+            ${v.status === 'FAILED' ? `<button class="btn btn-ghost btn-sm" onclick="resetVideo('${v.video_id}')">Retry</button>` : ''}
+            <button class="btn btn-danger btn-sm" onclick="deleteVideo('${v.video_id}')">Del</button>
+          </div>
+          ${v.last_error ? `<div title="${esc(v.last_error)}" style="font-size:10.5px;color:var(--danger);margin-top:4px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono)">⚠ ${esc(v.last_error)}</div>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 /* ============================================================
@@ -1477,59 +1792,65 @@ async function loadVideos() {
   filterVideos();
 }
 
+// Shows only READY queue by default
 function filterVideos() {
   const q = (document.getElementById('video-search')?.value || '').toLowerCase();
+  
   const filtered = allVideos.filter(v =>
-    v.title.toLowerCase().includes(q) ||
-    (v.meta_title || '').toLowerCase().includes(q) ||
-    v.channel_name.toLowerCase().includes(q) ||
-    v.status.toLowerCase().includes(q)
+    (v.status === 'READY') && (
+      v.title.toLowerCase().includes(q) ||
+      (v.meta_title || '').toLowerCase().includes(q) ||
+      v.channel_name.toLowerCase().includes(q)
+    )
   );
 
   const tbody = document.getElementById('videos-tbody');
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:30px;">No videos found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:30px;">No READY shorts waiting in the queue.</td></tr>`;
     return;
   }
   tbody.innerHTML = filtered.map(v => `
     <tr>
       <td>
-        <div style="font-weight:500;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(v.title)}">${esc(v.title)}</div>
-        ${v.meta_title ? `<div style="font-size:11px;color:var(--text-secondary);">${esc(v.meta_title)}</div>` : ''}
+        <div style="font-weight:700;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(v.title)}">${esc(v.title)}</div>
+        ${v.meta_title ? `<div style="font-size:11.5px;color:var(--text-secondary);">${esc(v.meta_title)}</div>` : ''}
       </td>
       <td style="font-size:12.5px;">${esc(v.channel_name)}</td>
       <td><span class="badge ${STATUS_COLORS[v.status] || 'badge-gray'}">${v.status}</span></td>
-      <td class="td-mono">${v.rank_score ? v.rank_score.toFixed(2) : '—'}</td>
-      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.meta_tags ? esc(v.meta_tags) : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td class="td-mono">${v.rank_score ? v.rank_score.toFixed(3) : '—'}</td>
+      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.meta_tags ? esc(v.meta_tags) : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>
         <div style="display:flex;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="openEditVideoModal('${v.video_id}', '${esc(v.meta_title)}', '${esc(v.meta_description)}', '${esc(v.meta_tags)}')">Edit Meta</button>
-          ${v.status === 'FAILED' ? `<button class="btn btn-ghost btn-sm" onclick="resetVideo('${v.video_id}')">Retry</button>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="openPreview('${v.video_id}')">Play Clip</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditVideoModal('${v.video_id}')">Edit Meta</button>
         </div>
       </td>
     </tr>
   `).join('');
 }
 
-function openEditVideoModal(id, title, desc, tags) {
+function openEditVideoModal(id) {
+  const v = allVideos.find(x => x.video_id === id);
+  if (!v) return;
   document.getElementById('edit-vid-id').value = id;
-  document.getElementById('edit-vid-title').value = title || '';
-  document.getElementById('edit-vid-desc').value = desc || '';
-  document.getElementById('edit-vid-tags').value = tags || '';
+  document.getElementById('edit-vid-title').value = v.meta_title || '';
+  document.getElementById('edit-vid-desc').value = v.meta_description || '';
+  document.getElementById('edit-vid-tags').value = v.meta_tags || '';
   openModal('modal-edit-video');
 }
 
 async function submitEditVideo() {
   const id = document.getElementById('edit-vid-id').value;
   const res = await api(`/api/videos/${id}`, 'PUT', {
-    meta_title:       document.getElementById('edit-vid-title').value,
-    meta_description: document.getElementById('edit-vid-desc').value,
-    meta_tags:        document.getElementById('edit-vid-tags').value,
+    meta_title:       document.getElementById('edit-vid-title').value.trim(),
+    meta_description: document.getElementById('edit-vid-desc').value.trim(),
+    meta_tags:        document.getElementById('edit-vid-tags').value.trim(),
   });
   if (res.error) { toast(res.error, 'error'); return; }
-  toast('Metadata saved!', 'success');
+  toast('Metadata overrides saved successfully!', 'success');
   closeModalById('modal-edit-video');
   loadVideos();
+  loadPipelineVideos();
 }
 
 async function resetVideo(id) {
@@ -1540,7 +1861,7 @@ async function resetVideo(id) {
 }
 
 async function deleteVideo(id) {
-  if (!confirm('Delete this video record? This cannot be undone.')) return;
+  if (!confirm('Delete this video record from database? This cannot be undone.')) return;
   const res = await api(`/api/videos/${id}`, 'DELETE');
   if (res.error) { toast(res.error, 'error'); return; }
   toast('Video deleted.', 'success');
@@ -1639,9 +1960,9 @@ async function publishNow() {
   btn.innerHTML = '<span class="spinner"></span> Publishing…';
   try {
     const res = await api('/api/publish-now', 'POST');
-    if (res.error) { toast('Error: ' + res.error, 'error'); return; }
-    if (res.ok)    { toast('Published! Video ID: ' + res.video_id, 'success'); loadStats(); }
-    else           { toast(res.message || 'Nothing to publish.', 'info'); }
+    if (res.error) { toast('Upload Error: ' + res.error, 'error'); return; }
+    if (res.ok)    { toast('Short Published! Video ID: ' + res.video_id, 'success'); loadStats(); }
+    else           { toast(res.message || 'No READY clips found to publish.', 'info'); }
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publish Now`;
@@ -1654,9 +1975,10 @@ async function pollNow() {
   btn.innerHTML = '<span class="spinner"></span> Polling…';
   try {
     const res = await api('/api/poll-now', 'POST');
-    if (res.error) { toast('Error: ' + res.error, 'error'); return; }
+    if (res.error) { toast('Discovery Error: ' + res.error, 'error'); return; }
     toast(`Poll complete — ${res.new_videos} new video(s) discovered.`, 'success');
     loadStats();
+    loadPipelineVideos();
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.14"/></svg> Poll Now`;
@@ -1688,13 +2010,35 @@ function formatDate(str) {
    ============================================================ */
 loadStats();
 
-// Auto-refresh all data every 5 seconds for a realtime feel.
-// Errors are swallowed so one flaky endpoint doesn't break the loop.
+// Auto-refresh all data fields every 5 seconds for visual reactive state tracking.
 async function refreshAll() {
-  try { await loadStats(); } catch {}
-  try { await loadPipelineVideos(); } catch {}
-  try { await loadVideos(); } catch {}
-  try { await loadChannels(); } catch {}
+  try {
+    const logsActive = document.getElementById('page-logs').classList.contains('active');
+    const settingsActive = document.getElementById('page-settings').classList.contains('active');
+    
+    if (logsActive) {
+      await loadLogs();
+    }
+    
+    if (!settingsActive) {
+      await loadStats();
+      
+      const pipelineActive = document.getElementById('page-pipeline').classList.contains('active');
+      if (pipelineActive) {
+        await loadPipelineVideos();
+      }
+      
+      const videosActive = document.getElementById('page-videos').classList.contains('active');
+      if (videosActive) {
+        await loadVideos();
+      }
+      
+      const channelsActive = document.getElementById('page-channels').classList.contains('active');
+      if (channelsActive) {
+        await loadChannels();
+      }
+    }
+  } catch (err) {}
 }
 setInterval(refreshAll, 5000);
 </script>

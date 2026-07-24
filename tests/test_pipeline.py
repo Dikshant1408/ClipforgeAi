@@ -18,6 +18,7 @@ def _cfg(tmp_path):
 
 class FakeDownloader:
     def is_live(self, url): return False
+    def was_live(self, url): return False
     def duration(self, url): return 100.0
     def download(self, vid, url): return f"/src/{vid}.mp4"
 
@@ -105,3 +106,27 @@ def test_publish_daily_uploads_top_ranked(tmp_path):
 def test_publish_daily_none_when_empty(tmp_path):
     db, pipe = _pipe(tmp_path)
     assert pipe.publish_daily() is None
+
+def test_skip_already_short_video(tmp_path):
+    db = Database(str(tmp_path / "t.db"))
+    _seed(db, "v_short")
+    class ShortDL(FakeDownloader):
+        def duration(self, url): return 35.0
+    pipe = Pipeline(db, ShortDL(), FakeTranscriber(), FakeClipper(),
+                    FakeUploader(), FakeCleanup(), _cfg(tmp_path))
+    pipe.advance_one()
+    rec = db.get("v_short")
+    assert rec.status == Status.PUBLISHED
+    assert "skipped: already a short" in rec.last_error
+
+def test_skip_completed_livestream(tmp_path):
+    db = Database(str(tmp_path / "t.db"))
+    _seed(db, "v_stream")
+    class StreamDL(FakeDownloader):
+        def was_live(self, url): return True
+    pipe = Pipeline(db, StreamDL(), FakeTranscriber(), FakeClipper(),
+                    FakeUploader(), FakeCleanup(), _cfg(tmp_path))
+    pipe.advance_one()
+    rec = db.get("v_stream")
+    assert rec.status == Status.PUBLISHED
+    assert "skipped: was a livestream" in rec.last_error

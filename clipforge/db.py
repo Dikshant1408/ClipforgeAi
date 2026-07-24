@@ -75,9 +75,9 @@ class Database:
         try:
             self._conn.execute(
                 "INSERT INTO videos (video_id, channel_id, channel_name, title,"
-                " url, status, discovered_at) VALUES (?,?,?,?,?,?,?)",
+                " url, status, last_error, discovered_at) VALUES (?,?,?,?,?,?,?,?)",
                 (rec.video_id, rec.channel_id, rec.channel_name, rec.title,
-                 rec.url, Status.DISCOVERED.value, rec.discovered_at),
+                 rec.url, rec.status.value, rec.last_error, rec.discovered_at),
             )
             self._conn.commit()
             return True
@@ -86,6 +86,10 @@ class Database:
 
     def exists(self, video_id: str) -> bool:
         c = self._conn.execute("SELECT 1 FROM videos WHERE video_id=?", (video_id,))
+        return c.fetchone() is not None
+
+    def has_channel_videos(self, channel_id: str) -> bool:
+        c = self._conn.execute("SELECT 1 FROM videos WHERE channel_id=? LIMIT 1", (channel_id,))
         return c.fetchone() is not None
 
     def get(self, video_id: str) -> VideoRecord | None:

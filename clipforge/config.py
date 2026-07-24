@@ -103,3 +103,19 @@ def load_config(path: str) -> Config:
         max_disk_gb=int(d.get("max_disk_gb", 50)),
         _path=path,
     )
+
+
+def setup_file_logging(storage_root: str = "./storage") -> None:
+    import logging
+    from pathlib import Path
+    log_dir = Path(storage_root)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "clipforge.log"
+    
+    root_logger = logging.getLogger()
+    has_file_handler = any(isinstance(h, logging.FileHandler) for h in root_logger.handlers)
+    if not has_file_handler:
+        fh = logging.FileHandler(log_file, encoding="utf-8")
+        fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+        root_logger.addHandler(fh)
+

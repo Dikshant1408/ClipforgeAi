@@ -15,11 +15,17 @@ from dotenv import load_dotenv
 
 load_dotenv(ROOT / ".env")
 
-from clipforge.config import load_config, Config
+from clipforge.config import load_config, Config, setup_file_logging
 from clipforge.db import Database
 from clipforge.models import Status
 
 CONFIG_PATH = str(ROOT / "config.json")
+try:
+    _startup_cfg = load_config(CONFIG_PATH)
+    setup_file_logging(_startup_cfg.storage_root)
+except Exception:
+    pass
+
 
 app = Flask(__name__, static_folder=str(Path(__file__).parent), static_url_path="")
 CORS(app)
@@ -359,7 +365,8 @@ def get_stats():
 
         recent = conn.execute(
             "SELECT video_id, channel_name, title, discovered_at FROM videos "
-            "WHERE status='PUBLISHED' ORDER BY discovered_at DESC LIMIT 10"
+            "WHERE status='PUBLISHED' AND (last_error = '' OR last_error IS NULL) "
+            "ORDER BY discovered_at DESC LIMIT 10"
         ).fetchall()
 
         return jsonify({
@@ -381,7 +388,113 @@ def get_stats():
         return jsonify({"error": str(e)}), 500
 
 
+# ---------------------------------------------------------------------------
+# API – Advanced Dashboard Operations
+# ---------------------------------------------------------------------------
+
+@app.route("/storage/<path:filename>", methods=["GET"])
+def get_storage_file(filename):
+    try:
+        cfg = _get_config()
+        storage_dir = Path(cfg.storage_root).resolve()
+        target_path = (storage_dir / filename).resolve()
+        if not str(target_path).startswith(str(storage_dir)):
+            return jsonify({"error": "Access denied"}), 403
+        if target_path.suffix.lower() not in [".mp4", ".wav", ".ass", ".json"]:
+            return jsonify({"error": "Unsupported file type"}), 400
+        if not target_path.exists():
+            return jsonify({"error": "File not found"}), 404
+        return send_from_directory(str(storage_dir), filename)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/logs", methods=["GET"])
+def get_logs():
+    try:
+        cfg = _get_config()
+        log_file = Path(cfg.storage_root) / "clipforge.log"
+        if not log_file.exists():
+            return jsonify([])
+        
+        limit = request.args.get("limit", 150, type=int)
+        from collections import deque
+        with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+            lines = list(deque(f, limit))
+        return jsonify([line.rstrip("\n") for line in lines])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/videos/<video_id>/advance", methods=["POST"])
+def advance_video(video_id: str):
+    try:
+        from clipforge.scheduler import build_pipeline
+        cfg = _get_config()
+        db, pipe, _ = build_pipeline(cfg, dry_run=False)
+        rec = db.get(video_id)
+        if not rec:
+            return jsonify({"error": "Video not found"}), 404
+        
+        if rec.status == Status.READY:
+            return jsonify({"ok": False, "message": "Video is already READY and waiting to be published."})
+        if rec.status == Status.PUBLISHED:
+            return jsonify({"ok": False, "message": "Video is already PUBLISHED."})
+        if rec.status == Status.PUBLISHING:
+            return jsonify({"ok": False, "message": "Video is currently publishing."})
+        
+        # If the video is FAILED, reset it first
+        if rec.status == Status.FAILED:
+            db.set_status(video_id, Status.DISCOVERED)
+            db._conn.execute(
+                "UPDATE videos SET retry_count=0, last_error='' WHERE video_id=?",
+                (video_id,)
+            )
+            db._conn.commit()
+            rec = db.get(video_id)
+        
+        # Stuck/In-progress mapping
+        stuck_map = {
+            Status.DOWNLOADING: Status.DISCOVERED,
+            Status.TRANSCRIBING: Status.DOWNLOADED,
+            Status.HIGHLIGHTING: Status.TRANSCRIBED,
+            Status.CLIPPING: Status.HIGHLIGHTED,
+            Status.METADATA: Status.CLIPPED,
+        }
+        if rec.status in stuck_map:
+            stable_status = stuck_map[rec.status]
+            db.set_status(video_id, stable_status)
+            rec = db.get(video_id)
+
+        old_status = rec.status
+        try:
+            pipe._handle(rec)
+            updated_rec = db.get(video_id)
+            return jsonify({
+                "ok": True,
+                "video_id": video_id,
+                "old_status": old_status.value,
+                "new_status": updated_rec.status.value
+            })
+        except Exception as e:
+            count = db.bump_retry(video_id, str(e))
+            db.reset_stuck()
+            if count > 3:
+                db.set_status(video_id, Status.FAILED, str(e))
+            updated_rec = db.get(video_id)
+            return jsonify({
+                "ok": False,
+                "error": str(e),
+                "video_id": video_id,
+                "old_status": old_status.value,
+                "new_status": updated_rec.status.value
+            }), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s %(message)s")
     app.run(host="0.0.0.0", port=5050, debug=True)
+

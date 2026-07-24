@@ -34,11 +34,23 @@ def test_poll_inserts_new_and_dedupes(tmp_path):
     db = Database(str(tmp_path / "t.db"))
     mon = Monitor(db, fetch=lambda url: SAMPLE)
     ch = [SourceChannel(name="A", channel_id="UC1")]
+    
+    # First poll of a new channel should seed existing videos as skipped/PUBLISHED
     first = mon.poll(ch)
-    assert set(first) == {"abc123", "def456"}
-    second = mon.poll(ch)  # same feed again
-    assert second == []
-    assert db.get("abc123").status == Status.DISCOVERED
+    assert first == []
+    assert db.get("abc123").status == Status.PUBLISHED
+    assert db.get("abc123").last_error == "skipped: seed video"
+    
+    # Second poll with a new video in the feed should detect it as DISCOVERED
+    new_sample = SAMPLE.replace(
+        "<entry>",
+        "<entry>\n    <yt:videoId>new789</yt:videoId>\n    <title>New Video</title>\n    <link rel=\"alternate\" href=\"https://www.youtube.com/watch?v=new789\"/>\n    <published>2026-01-03T10:00:00+00:00</published>\n  </entry>\n  <entry>"
+    )
+    mon2 = Monitor(db, fetch=lambda url: new_sample)
+    second = mon2.poll(ch)
+    assert second == ["new789"]
+    assert db.get("new789").status == Status.DISCOVERED
+    assert db.get("new789").last_error == ""
 
 def test_poll_skips_disabled_not_passed(tmp_path):
     # poll only receives channels the caller already filtered

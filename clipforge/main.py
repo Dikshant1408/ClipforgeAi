@@ -19,6 +19,8 @@ def main() -> None:
                         help="run scheduler but never upload to YouTube")
     args = parser.parse_args()
     config = load_config(args.config)
+    from clipforge.config import setup_file_logging
+    setup_file_logging(config.storage_root)
     if args.once:
         run_once(config, args.once)
     else:

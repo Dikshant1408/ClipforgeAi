@@ -33,6 +33,16 @@ class Pipeline:
         if rec.status == Status.DISCOVERED:
             if self._dl.is_live(rec.url):
                 raise RuntimeError("still live")
+            try:
+                duration = self._dl.duration(rec.url)
+                if duration > 0 and duration <= 60:
+                    self._db.set_status(vid, Status.PUBLISHED, "skipped: already a short")
+                    return
+                if self._dl.was_live(rec.url):
+                    self._db.set_status(vid, Status.PUBLISHED, "skipped: was a livestream")
+                    return
+            except Exception:
+                pass
             self._db.set_status(vid, Status.DOWNLOADING)
             path = self._dl.download(vid, rec.url)
             self._db.set_paths(vid, source_path=path)

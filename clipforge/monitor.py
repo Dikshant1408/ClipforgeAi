@@ -53,16 +53,24 @@ class Monitor:
                 items = parse_feed(xml)
             except Exception:
                 continue
+            
+            is_first_poll = not self._db.has_channel_videos(ch.channel_id)
+            
             for it in items:
+                status = Status.PUBLISHED if is_first_poll else Status.DISCOVERED
+                last_error = "skipped: seed video" if is_first_poll else ""
+                
                 rec = VideoRecord(
                     video_id=it["video_id"],
                     channel_id=ch.channel_id,
                     channel_name=ch.name,
                     title=it["title"],
                     url=it["url"],
-                    status=Status.DISCOVERED,
+                    status=status,
+                    last_error=last_error,
                     discovered_at=it["published"],
                 )
                 if self._db.insert_discovered(rec):
-                    new_ids.append(it["video_id"])
+                    if not is_first_poll:
+                        new_ids.append(it["video_id"])
         return new_ids

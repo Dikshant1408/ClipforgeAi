@@ -12,8 +12,11 @@ def _default_info(url: str) -> dict:
     import yt_dlp
     with yt_dlp.YoutubeDL({"quiet": True, "skip_download": True}) as ydl:
         info = ydl.extract_info(url, download=False)
-    return {"is_live": bool(info.get("is_live")),
-            "duration": float(info.get("duration") or 0.0)}
+    return {
+        "is_live": bool(info.get("is_live")),
+        "was_live": bool(info.get("was_live") or info.get("live_status") == "was_live"),
+        "duration": float(info.get("duration") or 0.0)
+    }
 
 
 class Downloader:
@@ -27,6 +30,12 @@ class Downloader:
     def is_live(self, url: str) -> bool:
         try:
             return bool(self._info(url).get("is_live"))
+        except Exception:
+            return False
+
+    def was_live(self, url: str) -> bool:
+        try:
+            return bool(self._info(url).get("was_live"))
         except Exception:
             return False
 
