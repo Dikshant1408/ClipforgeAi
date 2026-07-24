@@ -1406,7 +1406,6 @@ async function api(path, method = 'GET', body = null) {
     throw err;
   }
 }
-}
 
 /* ============================================================
    TOAST
@@ -1956,6 +1955,30 @@ async function loadSettingsForm() {
 let _currentCfg = {};
 
 async function saveSettings() {
+  const connBase = document.getElementById('cfg-connection-base').value.trim();
+  const oldBase = localStorage.getItem('clipforge_api_base') || '';
+  
+  if (connBase) {
+    localStorage.setItem('clipforge_api_base', connBase);
+  } else {
+    localStorage.removeItem('clipforge_api_base');
+  }
+
+  // If connection changed or if no backend config has been successfully loaded yet,
+  // save connection setting locally and immediately reload without posting empty config
+  if (connBase !== oldBase || !_currentCfg || !_currentCfg.source_channels) {
+    toast('Connection settings saved locally.', 'success');
+    refreshAll();
+    loadStats();
+    if (document.getElementById('page-settings').classList.contains('active')) {
+      loadSettingsForm().catch(() => {});
+    }
+    const btn = document.getElementById('btn-save-settings');
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg> Save All Settings`;
+    return;
+  }
+
   const btn = document.getElementById('btn-save-settings');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Saving…';
@@ -1991,13 +2014,6 @@ async function saveSettings() {
         category_id:    document.getElementById('cfg-yt-category').value.trim(),
       },
     };
-
-    const connBase = document.getElementById('cfg-connection-base').value.trim();
-    if (connBase) {
-      localStorage.setItem('clipforge_api_base', connBase);
-    } else {
-      localStorage.removeItem('clipforge_api_base');
-    }
 
     const res = await api('/api/config', 'POST', payload);
     if (res.error) { toast('Save failed: ' + res.error, 'error'); return; }
