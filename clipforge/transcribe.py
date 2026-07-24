@@ -1,7 +1,7 @@
 from __future__ import annotations
 import subprocess
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Any
 
 
 @dataclass
@@ -46,7 +46,7 @@ class Transcriber:
         rc = self._extract(video_path, audio_path)
         if rc != 0:
             raise RuntimeError(f"audio extract failed (rc={rc})")
-        model = self._factory(self._model_name, self._device)
+        model: Any = self._factory(self._model_name, self._device)
         segments, _info = model.transcribe(
             audio_path,
             language=self._language,

@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv(ROOT / ".env")
 
 from clipforge.config import load_config, Config, setup_file_logging
-from clipforge.db import Database
+from clipforge.db import Database, _STUCK_MAP
 from clipforge.models import Status
 
 CONFIG_PATH = str(ROOT / "config.json")
@@ -452,24 +452,23 @@ def advance_video(video_id: str):
             )
             db._conn.commit()
             rec = db.get(video_id)
+            if not rec:
+                return jsonify({"error": "Video not found after reset"}), 404
         
         # Stuck/In-progress mapping
-        stuck_map = {
-            Status.DOWNLOADING: Status.DISCOVERED,
-            Status.TRANSCRIBING: Status.DOWNLOADED,
-            Status.HIGHLIGHTING: Status.TRANSCRIBED,
-            Status.CLIPPING: Status.HIGHLIGHTED,
-            Status.METADATA: Status.CLIPPED,
-        }
-        if rec.status in stuck_map:
-            stable_status = stuck_map[rec.status]
+        if rec.status in _STUCK_MAP:
+            stable_status = _STUCK_MAP[rec.status]
             db.set_status(video_id, stable_status)
             rec = db.get(video_id)
+            if not rec:
+                return jsonify({"error": "Video not found after status update"}), 404
 
         old_status = rec.status
         try:
             pipe._handle(rec)
             updated_rec = db.get(video_id)
+            if not updated_rec:
+                return jsonify({"error": "Video not found after handle"}), 404
             return jsonify({
                 "ok": True,
                 "video_id": video_id,
@@ -481,8 +480,11 @@ def advance_video(video_id: str):
             db.reset_stuck()
             if count > 3:
                 db.set_status(video_id, Status.FAILED, str(e))
-                pipe._cleanup.delete_video_files(video_id, rec.source_path, rec.clip_path)
+                if rec:
+                    pipe._cleanup.delete_video_files(video_id, rec.source_path, rec.clip_path)
             updated_rec = db.get(video_id)
+            if not updated_rec:
+                return jsonify({"error": "Video not found after failure"}), 404
             return jsonify({
                 "ok": False,
                 "error": str(e),

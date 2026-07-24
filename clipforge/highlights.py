@@ -121,8 +121,8 @@ def pad_hook(seg: Segment, segments: list[TranscriptSeg], lead: float,
 
 
 def pick_best(segments: list[TranscriptSeg], min_s: float, max_s: float,
-              llm: LLMProvider = None,
-              energy: Callable[[float, float], float] = None,
+              llm: LLMProvider | None = None,
+              energy: Callable[[float, float], float] | None = None,
               hook_lead: float = 0.0) -> Segment | None:
     if not segments:
         return None
@@ -140,9 +140,9 @@ def pick_best(segments: list[TranscriptSeg], min_s: float, max_s: float,
     # boost the LLM-chosen window if available
     if llm is not None:
         try:
-            idx = _llm_rank(llm, windows, segments)
-            if idx is not None:
-                windows[idx].score += 1.0
+            idx_val = _llm_rank(llm, windows, segments)
+            if idx_val is not None:
+                windows[int(idx_val)].score += 1.0
         except LLMError:
             pass  # degrade to keyword-only scoring
     windows.sort(key=lambda w: (w.score, -(w.end - w.start)), reverse=True)

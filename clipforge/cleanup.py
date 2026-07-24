@@ -98,10 +98,16 @@ class Cleanup:
         # oldest published first (published_source_paths preserves insert order
         # by discovered_at via query; sort defensively here)
         published = self._db.published_source_paths()
+
+        def _get_discovered_at(pair: tuple[str, str]) -> str:
+            rec = self._db.get(pair[0])
+            if rec:
+                return rec.discovered_at
+            return ""
+
         published_by_age = sorted(
             published,
-            key=lambda pair: (self._db.get(pair[0]).discovered_at
-                              if self._db.get(pair[0]) else ""))
+            key=_get_discovered_at)
         for video_id, source_path in published_by_age:
             if dir_size_gb(str(videos_dir)) <= self._max:
                 break

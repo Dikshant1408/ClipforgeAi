@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable
+from typing import Callable, Any
 from clipforge.models import ClipMetadata
 
 _SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
@@ -50,7 +50,7 @@ class YouTubeUploader:
                        "selfDeclaredMadeForKids": False},
         }
         try:
-            service = self._service_factory()
+            service: Any = self._service_factory()
             media = self._media_factory(clip_path)
             request = service.videos().insert(
                 part="snippet,status", body=body, media_body=media)

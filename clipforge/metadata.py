@@ -45,7 +45,7 @@ def template_metadata(video_title: str, transcript_text: str) -> ClipMetadata:
 
 
 def generate_metadata(video_title: str, transcript_text: str,
-                       llm: LLMProvider = None) -> ClipMetadata:
+                      llm: LLMProvider | None = None) -> ClipMetadata:
     if llm is None:
         return template_metadata(video_title, transcript_text)
     

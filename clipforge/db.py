@@ -108,10 +108,11 @@ class Database:
             "UPDATE videos SET retry_count=retry_count+1, last_error=? WHERE video_id=?",
             (error, video_id))
         self._conn.commit()
-        return self.get(video_id).retry_count
+        rec = self.get(video_id)
+        return rec.retry_count if rec else 0
 
-    def set_paths(self, video_id: str, source_path: str = None,
-                  clip_path: str = None) -> None:
+    def set_paths(self, video_id: str, source_path: str | None = None,
+                  clip_path: str | None = None) -> None:
         if source_path is not None:
             self._conn.execute("UPDATE videos SET source_path=? WHERE video_id=?",
                                (source_path, video_id))

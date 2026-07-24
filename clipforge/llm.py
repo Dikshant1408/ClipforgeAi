@@ -31,7 +31,7 @@ class GeminiProvider(LLMProvider):
 
     def _raw(self, prompt: str) -> str:
         try:
-            resp = self._model.generate_content(prompt)
+            resp = self._model.generate_content(prompt) # type: ignore
             return resp.text
         except Exception as e:  # quota, network, safety blocks
             raise LLMError(str(e)) from e

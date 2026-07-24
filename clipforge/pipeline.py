@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from clipforge.db import Database
-from clipforge.models import Status, ClipMetadata
+from clipforge.models import Status, ClipMetadata, Segment
 from clipforge import highlights, metadata
 
 _MAX_RETRIES = 3
@@ -25,7 +25,7 @@ class Pipeline:
         self._cfg = config
         self._llm = llm
         self._segments: dict[str, list] = {}
-        self._best: dict[str, object] = {}
+        self._best: dict[str, Segment | None] = {}
 
     def _handle(self, rec) -> None:
         vid = rec.video_id
