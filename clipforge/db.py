@@ -25,7 +25,10 @@ CREATE TABLE IF NOT EXISTS videos (
     source_path TEXT NOT NULL DEFAULT '',
     clip_path TEXT NOT NULL DEFAULT '',
     rank_score REAL NOT NULL DEFAULT 0.0,
-    discovered_at TEXT NOT NULL DEFAULT ''
+    discovered_at TEXT NOT NULL DEFAULT '',
+    meta_title TEXT NOT NULL DEFAULT '',
+    meta_description TEXT NOT NULL DEFAULT '',
+    meta_tags TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_status ON videos(status);
 """
@@ -39,6 +42,15 @@ class Database:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_SCHEMA)
         self._conn.commit()
+
+        # Database schema migration for meta columns if they don't exist
+        try:
+            self._conn.execute("SELECT meta_title FROM videos LIMIT 1")
+        except sqlite3.OperationalError:
+            self._conn.execute("ALTER TABLE videos ADD COLUMN meta_title TEXT NOT NULL DEFAULT ''")
+            self._conn.execute("ALTER TABLE videos ADD COLUMN meta_description TEXT NOT NULL DEFAULT ''")
+            self._conn.execute("ALTER TABLE videos ADD COLUMN meta_tags TEXT NOT NULL DEFAULT ''")
+            self._conn.commit()
 
     def _row_to_rec(self, r: sqlite3.Row) -> VideoRecord:
         return VideoRecord(
@@ -54,6 +66,9 @@ class Database:
             clip_path=r["clip_path"],
             rank_score=r["rank_score"],
             discovered_at=r["discovered_at"],
+            meta_title=r["meta_title"] if "meta_title" in r.keys() else "",
+            meta_description=r["meta_description"] if "meta_description" in r.keys() else "",
+            meta_tags=r["meta_tags"] if "meta_tags" in r.keys() else "",
         )
 
     def insert_discovered(self, rec: VideoRecord) -> bool:
@@ -99,6 +114,14 @@ class Database:
         if clip_path is not None:
             self._conn.execute("UPDATE videos SET clip_path=? WHERE video_id=?",
                                (clip_path, video_id))
+        self._conn.commit()
+
+    def set_metadata(self, video_id: str, title: str, description: str, tags: list[str]) -> None:
+        tags_str = ",".join(tags)
+        self._conn.execute(
+            "UPDATE videos SET meta_title=?, meta_description=?, meta_tags=? WHERE video_id=?",
+            (title, description, tags_str, video_id)
+        )
         self._conn.commit()
 
     def set_rank(self, video_id: str, rank_score: float) -> None:

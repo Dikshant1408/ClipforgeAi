@@ -45,3 +45,11 @@ def test_reset_stuck(db):
     db.set_status("v1", Status.DOWNLOADING)
     assert db.reset_stuck() == 1
     assert db.get("v1").status == Status.DISCOVERED
+
+def test_set_and_get_metadata(db):
+    db.insert_discovered(_rec("v1"))
+    db.set_metadata("v1", "Title Override", "Description Override", ["tag_a", "tag_b"])
+    rec = db.get("v1")
+    assert rec.meta_title == "Title Override"
+    assert rec.meta_description == "Description Override"
+    assert rec.meta_tags == "tag_a,tag_b"

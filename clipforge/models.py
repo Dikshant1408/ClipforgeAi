@@ -57,3 +57,6 @@ class VideoRecord:
     clip_path: str = ""
     rank_score: float = 0.0
     discovered_at: str = ""
+    meta_title: str = ""
+    meta_description: str = ""
+    meta_tags: str = ""
