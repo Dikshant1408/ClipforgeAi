@@ -1356,13 +1356,56 @@ updateTime();
 /* ============================================================
    API HELPERS
    ============================================================ */
+function showConnectionWarning(targetUrl) {
+  let el = document.getElementById('connection-warning-banner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'connection-warning-banner';
+    el.style.cssText = 'background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #f87171; padding: 14px 24px; border-radius: var(--radius-md); margin-bottom: 24px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%;';
+    
+    const content = document.createElement('div');
+    content.innerHTML = `<strong>🔌 Backend Connection Offline:</strong> Unable to connect to the ClipForge backend. If you are hosting the dashboard on Vercel, please go to <strong>Settings &gt; Connection</strong> and save your local backend API URL (e.g., <code>http://localhost:5050</code>).`;
+    el.appendChild(content);
+    
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = 'Setup Connection';
+    btn.onclick = () => {
+      navigate('settings');
+      const connTab = document.querySelector('[onclick*="switchSettingsTab(\'connection\'"]');
+      if (connTab) switchSettingsTab('connection', connTab);
+    };
+    el.appendChild(btn);
+    
+    const contentDiv = document.getElementById('content');
+    if (contentDiv) {
+      contentDiv.insertBefore(el, contentDiv.firstChild);
+    }
+  }
+}
+
+function hideConnectionWarning() {
+  const el = document.getElementById('connection-warning-banner');
+  if (el) el.remove();
+}
+
 async function api(path, method = 'GET', body = null) {
   const base = localStorage.getItem('clipforge_api_base') || '';
   const url = base ? (base.replace(/\/$/, '') + path) : path;
   const opts = { method, headers: {'Content-Type':'application/json'}, cache: 'no-store' };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
-  return res.json();
+  try {
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    hideConnectionWarning();
+    return await res.json();
+  } catch (err) {
+    showConnectionWarning(url);
+    throw err;
+  }
+}
 }
 
 /* ============================================================
