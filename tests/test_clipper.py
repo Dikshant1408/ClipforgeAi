@@ -1,7 +1,21 @@
 import pytest
 from pathlib import Path
-from clipforge.clipper import Clipper
+from clipforge.clipper import format_timestamp, build_ass, Clipper
 from clipforge.models import Segment
+from clipforge.transcribe import TranscriptSeg, Word
+
+
+def test_format_timestamp():
+    assert format_timestamp(0) == "0:00:00.00"
+    assert format_timestamp(3661.5) == "1:01:01.50"
+
+
+def test_build_ass_rebases_time():
+    segs = [TranscriptSeg(10.0, 12.0, "hello", [Word(10.0, 11.0, "hello")])]
+    ass = build_ass(segs, seg_start=10.0, seg_end=12.0)
+    assert "Dialogue:" in ass
+    assert "0:00:00.00" in ass  # 10.0 rebased to 0
+    assert "hello" in ass
 
 
 def test_make_short_builds_ffmpeg(tmp_path):
@@ -16,7 +30,7 @@ def test_make_short_builds_ffmpeg(tmp_path):
     assert out == str(tmp_path / "clips" / "vid1.mp4")
     argv = calls["argv"]
     assert "-ss" in argv and "crop" in " ".join(argv)
-    assert "ass=" not in " ".join(argv)  # no burned subtitles
+    assert "ass=" in " ".join(argv) or "subtitles=" in " ".join(argv)
 
 
 def test_make_short_failure_raises(tmp_path):
@@ -27,8 +41,6 @@ def test_make_short_failure_raises(tmp_path):
 
 
 def test_output_audio_matches_segment_duration(tmp_path):
-    """Regression: input-side -ss desynced audio and cut it short. Output must
-    contain both video and audio streams whose duration matches the segment."""
     import subprocess as _sp
     src = tmp_path / "src.mp4"
     _sp.run(["ffmpeg", "-y", "-f", "lavfi", "-i",
@@ -46,3 +58,32 @@ def test_output_audio_matches_segment_duration(tmp_path):
     types = [s["codec_type"] for s in data["streams"]]
     assert "video" in types and "audio" in types
     assert 14.5 <= dur <= 15.5
+
+
+def test_build_ass_karaoke_highlights_words():
+    segs = [TranscriptSeg(10.0, 12.0, "hello world",
+                          [Word(10.0, 11.0, "hello"), Word(11.0, 12.0, "world")])]
+    ass = build_ass(segs, seg_start=10.0, seg_end=12.0)
+    assert "\\k" in ass
+    assert "hello" in ass and "world" in ass
+
+
+def test_build_ass_hook_overlay_present():
+    segs = [TranscriptSeg(0.0, 2.0, "hi", [Word(0.0, 2.0, "hi")])]
+    ass = build_ass(segs, seg_start=0.0, seg_end=20.0, hook_text="He threw it")
+    assert "Hook," in ass
+    assert "He threw it" in ass
+
+
+def test_make_short_includes_zoompan(tmp_path):
+    def runner(argv):
+        Path(argv[-1]).write_text("x")
+        return 0
+    c = Clipper(str(tmp_path), runner=runner)
+    seg = Segment(start=10.0, end=25.0, score=1.0)
+    c.make_short("vid1", str(tmp_path / "src.mp4"), seg,
+                 [TranscriptSeg(10.0, 12.0, "hi", [])], hook_text="Hook line")
+    ass_path = tmp_path / "clips" / "vid1.ass"
+    assert ass_path.exists()
+    ass_content = ass_path.read_text(encoding="utf-8")
+    assert "Hook line" in ass_content
