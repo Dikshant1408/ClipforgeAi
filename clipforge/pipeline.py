@@ -82,9 +82,8 @@ class Pipeline:
             best = self._best.get(vid)
             if best is None:
                 raise RuntimeError("missing segment; will reprocess")
-            hook_text = self._make_hook(rec, segs)
             clip_path = self._clip.make_short(
-                vid, rec.source_path, best, segs, hook_text=hook_text)
+                vid, rec.source_path, best, segs)
             self._db.set_paths(vid, clip_path=clip_path)
             self._db.set_status(vid, Status.CLIPPED)
         elif rec.status == Status.CLIPPED:
@@ -113,30 +112,6 @@ class Pipeline:
                     self._db.set_status(rec.video_id, Status.FAILED, str(e))
                 return rec.video_id
         return None
-
-    def _make_hook(self, rec, segs) -> str:
-        """Short bold 'story' hook for the first frames. Prioritises the LLM
-        so it sets up a narrative; falls back to a trimmed title. Capped at
-        ~60 chars so it fits one line on the hook overlay."""
-        if self._llm is not None:
-            text = " ".join(s.text for s in segs)
-            prompt = (
-                "Write ONE short, bold hook line (max 8 words, no emoji, no "
-                "quote marks) that sets up a story and makes someone want to "
-                "keep watching this gaming clip. Examples: 'He threw the whole "
-                "game', 'This clutch was NOT scripted'.\n"
-                f"Clip context: {rec.title}\nTranscript: {text[:800]}\n\n"
-                'Return ONLY JSON: {"hook": "..."}'
-            )
-            try:
-                data = self._llm.generate_json(prompt)
-                hook = str(data.get("hook", "")).strip().strip('"').strip("'")
-                if hook:
-                    return hook[:60]
-            except Exception:
-                pass
-        title = rec.title or "Insane moment"
-        return title[:60].replace(" | VALORANT #shorts", "")
 
     def _priority_index(self, channel_id: str) -> int:
         for i, ch in enumerate(self._cfg.enabled_channels()):
