@@ -481,6 +481,7 @@ def advance_video(video_id: str):
             db.reset_stuck()
             if count > 3:
                 db.set_status(video_id, Status.FAILED, str(e))
+                pipe._cleanup.delete_video_files(video_id, rec.source_path, rec.clip_path)
             updated_rec = db.get(video_id)
             return jsonify({
                 "ok": False,

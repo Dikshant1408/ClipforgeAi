@@ -120,6 +120,7 @@ class Pipeline:
                 self._db.reset_stuck()
                 if count > _MAX_RETRIES:
                     self._db.set_status(rec.video_id, Status.FAILED, str(e))
+                    self._cleanup.delete_video_files(rec.video_id, rec.source_path, rec.clip_path)
                 return rec.video_id
         return None
 
@@ -159,3 +160,6 @@ class Pipeline:
         self._cleanup.delete_source(rec.video_id, rec.source_path)
         self._cleanup.enforce_quota()
         return rec.video_id
+
+    def cleanup_expired_files(self) -> None:
+        self._cleanup.cleanup_expired_files()

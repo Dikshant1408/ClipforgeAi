@@ -100,6 +100,7 @@ def run_forever(config: Config, dry_run: bool = False) -> None:
                   "interval", minutes=config.monitor_interval_minutes,
                   id="monitor")
     sched.add_job(lambda: _drain(pipe), "interval", seconds=30, id="worker")
+    sched.add_job(pipe.cleanup_expired_files, "interval", hours=1, id="cleanup")
     for i, t in enumerate(config.publish_time):
         hh, mm = t.split(":")
         sched.add_job(pipe.publish_daily, "cron", hour=int(hh), minute=int(mm),

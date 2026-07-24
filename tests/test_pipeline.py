@@ -36,9 +36,12 @@ class FakeUploader:
         return "YTID"
 
 class FakeCleanup:
-    def __init__(self): self.deleted = []
+    def __init__(self):
+        self.deleted = []
+        self.deleted_files = []
     def delete_source(self, vid, src): self.deleted.append(vid)
     def enforce_quota(self): return 0
+    def delete_video_files(self, vid, src="", clip=""): self.deleted_files.append(vid)
 
 def _pipe(tmp_path, uploader=None):
     db = Database(str(tmp_path / "t.db"))
@@ -73,11 +76,13 @@ def test_retry_then_fail(tmp_path):
     _seed(db)
     class Boom(FakeDownloader):
         def download(self, vid, url): raise RuntimeError("net")
+    cleanup = FakeCleanup()
     pipe = Pipeline(db, Boom(), FakeTranscriber(), FakeClipper(),
-                    FakeUploader(), FakeCleanup(), _cfg(tmp_path))
+                    FakeUploader(), cleanup, _cfg(tmp_path))
     for _ in range(4):
         pipe.advance_one()
     assert db.get("v1").status == Status.FAILED
+    assert "v1" in cleanup.deleted_files
 
 def test_skip_live_video(tmp_path):
     db = Database(str(tmp_path / "t.db"))
