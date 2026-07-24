@@ -1024,6 +1024,7 @@
         <div class="settings-tab" onclick="switchSettingsTab('whisper', this)">Whisper</div>
         <div class="settings-tab" onclick="switchSettingsTab('storage', this)">Storage</div>
         <div class="settings-tab" onclick="switchSettingsTab('youtube', this)">YouTube</div>
+        <div class="settings-tab" onclick="switchSettingsTab('connection', this)">Connection</div>
       </div>
 
       <!-- Publishing -->
@@ -1141,6 +1142,17 @@
             <label>Category ID</label>
             <input type="text" id="cfg-yt-category" placeholder="20 = Gaming" />
             <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">1=Film&TV, 10=Music, 20=Gaming, 22=People, 24=Entertainment</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connection -->
+      <div class="settings-panel card" id="settings-panel-connection">
+        <div class="form-group">
+          <label>Backend API Base URL (empty for relative pathing)</label>
+          <input type="text" id="cfg-connection-base" placeholder="e.g. http://localhost:5050" />
+          <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">
+            If you deploy this dashboard to Vercel, specify the address of your persistent ClipForge backend server (include http/https).
           </div>
         </div>
       </div>
@@ -1345,9 +1357,11 @@ updateTime();
    API HELPERS
    ============================================================ */
 async function api(path, method = 'GET', body = null) {
+  const base = localStorage.getItem('clipforge_api_base') || '';
+  const url = base ? (base.replace(/\/$/, '') + path) : path;
   const opts = { method, headers: {'Content-Type':'application/json'}, cache: 'no-store' };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(path, opts);
+  const res = await fetch(url, opts);
   return res.json();
 }
 
@@ -1891,6 +1905,7 @@ async function loadSettingsForm() {
   document.getElementById('cfg-max-disk').value          = cfg.max_disk_gb || 50;
   document.getElementById('cfg-yt-privacy').value        = cfg.youtube?.privacy_status || 'public';
   document.getElementById('cfg-yt-category').value       = cfg.youtube?.category_id || '20';
+  document.getElementById('cfg-connection-base').value   = localStorage.getItem('clipforge_api_base') || '';
 
   _currentCfg = cfg;
 }
@@ -1933,6 +1948,13 @@ async function saveSettings() {
         category_id:    document.getElementById('cfg-yt-category').value.trim(),
       },
     };
+
+    const connBase = document.getElementById('cfg-connection-base').value.trim();
+    if (connBase) {
+      localStorage.setItem('clipforge_api_base', connBase);
+    } else {
+      localStorage.removeItem('clipforge_api_base');
+    }
 
     const res = await api('/api/config', 'POST', payload);
     if (res.error) { toast('Save failed: ' + res.error, 'error'); return; }
