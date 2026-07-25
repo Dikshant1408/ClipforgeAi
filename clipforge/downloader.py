@@ -46,12 +46,22 @@ class Downloader:
             return 0.0
 
     def download(self, video_id: str, url: str) -> str:
+        import sys
+        # Resolve yt-dlp inside the same virtual environment as python
+        venv_bin = Path(sys.executable).parent
+        yt_dlp_exe = venv_bin / "yt-dlp.exe"
+        if not yt_dlp_exe.exists():
+            yt_dlp_exe = venv_bin / "yt-dlp"
+        
+        yt_dlp_path = str(yt_dlp_exe) if yt_dlp_exe.exists() else "yt-dlp"
+
         out_dir = self._root / "videos"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"{video_id}.mp4"
-        argv = ["yt-dlp", "-f", "bv*+ba/b", "--merge-output-format", "mp4",
+        argv = [yt_dlp_path, "-f", "bv*+ba/b", "--merge-output-format", "mp4",
                 "-o", str(out_path), url]
         rc = self._runner(argv)
         if rc != 0:
             raise RuntimeError(f"yt-dlp failed (rc={rc}) for {url}")
         return str(out_path)
+

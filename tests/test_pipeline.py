@@ -135,3 +135,37 @@ def test_skip_completed_livestream(tmp_path):
     rec = db.get("v_stream")
     assert rec.status == Status.PUBLISHED
     assert "skipped: was a livestream" in rec.last_error
+
+def test_instant_publish_for_godrikt(tmp_path):
+    db = Database(str(tmp_path / "t.db"))
+    db.insert_discovered(VideoRecord("v_godrikt", "UCn-qzh9AwWbQoZ0C9tyTSNg", "GodRikt", "Valorant Clip", "url",
+                                     Status.DISCOVERED, discovered_at="2026-01-01"))
+    up = FakeUploader()
+    pipe = Pipeline(db, FakeDownloader(), FakeTranscriber(), FakeClipper(),
+                    up, FakeCleanup(), _cfg(tmp_path))
+    for _ in range(10):
+        if pipe.advance_one() is None:
+            break
+    rec = db.get("v_godrikt")
+    assert rec.status == Status.PUBLISHED
+    assert len(up.uploaded) == 1
+
+def test_scheduled_publish_skipped_for_godrikt(tmp_path):
+    db = Database(str(tmp_path / "t.db"))
+    db.insert_discovered(VideoRecord("v_godrikt", "UCn-qzh9AwWbQoZ0C9tyTSNg", "GodRikt", "t1", "u1",
+                                     Status.DISCOVERED, discovered_at="2026-01-01"))
+    db.insert_discovered(VideoRecord("v_vct", "UC_vct", "VCTPacific", "t2", "u2",
+                                     Status.DISCOVERED, discovered_at="2026-01-02"))
+    up = FakeUploader()
+    pipe = Pipeline(db, FakeDownloader(), FakeTranscriber(), FakeClipper(),
+                    up, FakeCleanup(), _cfg(tmp_path))
+    for _ in range(20):
+        if pipe.advance_one() is None:
+            break
+    assert db.get("v_godrikt").status == Status.PUBLISHED
+    assert db.get("v_vct").status == Status.READY
+    published = pipe.publish_daily()
+    assert published == "v_vct"
+    assert db.get("v_vct").status == Status.PUBLISHED
+    assert pipe.publish_daily() is None
+

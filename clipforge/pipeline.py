@@ -106,6 +106,10 @@ class Pipeline:
             self._db.set_status(vid, Status.READY)
             self._meta_cache = getattr(self, "_meta_cache", {})
             self._meta_cache[vid] = meta
+            if self._is_instant_publish(rec):
+                rec_ready = self._db.get(vid)
+                self._publish_record(rec_ready)
+
 
     def _make_hook(self, rec, segs) -> str:
         """Short bold 'story' hook for the first frames. Prioritises the LLM
@@ -155,14 +159,11 @@ class Pipeline:
                 return i
         return 10_000
 
-    def publish_daily(self) -> str | None:
-        ready = self._db.list_ready()
-        if not ready:
-            return None
-        ready.sort(key=lambda r: (-r.rank_score,
-                                  self._priority_index(r.channel_id),
-                                  r.discovered_at))
-        rec = ready[0]
+    def _is_instant_publish(self, rec) -> bool:
+        name = (rec.channel_name or "").lower()
+        return name == "godrikt" or name == "@godrikt" or rec.channel_id == "UCn-qzh9AwWbQoZ0C9tyTSNg"
+
+    def _publish_record(self, rec) -> str | None:
         self._db.set_status(rec.video_id, Status.PUBLISHING)
         cache = getattr(self, "_meta_cache", {})
         meta = cache.get(rec.video_id)
@@ -185,6 +186,17 @@ class Pipeline:
         self._cleanup.delete_source(rec.video_id, rec.source_path)
         self._cleanup.enforce_quota()
         return rec.video_id
+
+    def publish_daily(self) -> str | None:
+        ready = self._db.list_ready()
+        ready = [r for r in ready if not self._is_instant_publish(r)]
+        if not ready:
+            return None
+        ready.sort(key=lambda r: (-r.rank_score,
+                                  self._priority_index(r.channel_id),
+                                  r.discovered_at))
+        return self._publish_record(ready[0])
+
 
     def cleanup_expired_files(self) -> None:
         self._cleanup.cleanup_expired_files()
