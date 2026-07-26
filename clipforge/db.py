@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS videos (
     meta_tags TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_status ON videos(status);
+-- Performance Optimization (Bolt): Index channel_id to speed up has_channel_videos check.
+CREATE INDEX IF NOT EXISTS idx_channel_id ON videos(channel_id);
+-- Performance Optimization (Bolt): Index discovered_at to speed up sorting operations on videos list.
+CREATE INDEX IF NOT EXISTS idx_discovered_at ON videos(discovered_at);
 """
 
 
