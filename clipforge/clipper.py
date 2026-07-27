@@ -111,13 +111,12 @@ class Clipper:
             build_ass(transcript, seg.start, seg.end, hook_text=hook_text),
             encoding="utf-8")
         out_path = clips_dir / f"{video_id}.mp4"
-        # center-crop to 9:16, subtle slow zoom-punch (Ken Burns), burn ASS.
-        ass_escaped = str(ass_path).replace("\\", "/").replace(":", "\\:")
+        # center-crop to 9:16, subtle slow zoom-punch (Ken Burns).
         vf = ("crop='min(iw,ih*9/16)':'min(ih,iw*16/9)',"
               "scale=1080:1920,"
               "zoompan=z='min(zoom+0.0008,1.12)':d=1:x='iw/2-(iw/zoom/2)':"
-              "y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,"
-              f"ass='{ass_escaped}'")
+              "y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30")
+
         argv = ["ffmpeg", "-y", "-i", source_path,
                 "-ss", str(seg.start), "-to", str(seg.end),
                 "-avoid_negative_ts", "make_zero",

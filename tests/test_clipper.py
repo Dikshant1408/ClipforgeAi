@@ -30,7 +30,8 @@ def test_make_short_builds_ffmpeg(tmp_path):
     assert out == str(tmp_path / "clips" / "vid1.mp4")
     argv = calls["argv"]
     assert "-ss" in argv and "crop" in " ".join(argv)
-    assert "ass=" in " ".join(argv) or "subtitles=" in " ".join(argv)
+    assert "ass=" not in " ".join(argv) and "subtitles=" not in " ".join(argv)
+
 
 
 def test_make_short_failure_raises(tmp_path):

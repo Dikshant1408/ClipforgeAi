@@ -8,17 +8,40 @@ _SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 def _default_service_factory():
     from google_auth_oauthlib.flow import InstalledAppFlow
     from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
     import os
+
+    creds = None
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", _SCOPES)
-    else:
+
+    if creds and not creds.valid:
+        if creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                with open("token.json", "w", encoding="utf-8") as f:
+                    f.write(creds.to_json())
+            except Exception:
+                # Refresh failed (e.g., token revoked or 7-day limit in GCP Testing state)
+                creds = None
+        else:
+            creds = None
+
+    if not creds:
+        if os.path.exists("token.json"):
+            try:
+                os.remove("token.json")
+            except Exception:
+                pass
         flow = InstalledAppFlow.from_client_secrets_file(
             "client_secret.json", _SCOPES)
         creds = flow.run_local_server(port=0)
         with open("token.json", "w", encoding="utf-8") as f:
             f.write(creds.to_json())
+
     return build("youtube", "v3", credentials=creds)
+
 
 
 def _default_media_factory(path: str):
