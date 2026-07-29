@@ -392,6 +392,35 @@ def get_stats():
 # API – Advanced Dashboard Operations
 # ---------------------------------------------------------------------------
 
+def _tail_file(filepath: str, max_lines: int, chunk_size: int = 8192) -> list[str]:
+    """Reads the last max_lines from a file efficiently by seeking from the end."""
+    lines = []
+    try:
+        with open(filepath, "rb") as f:
+            f.seek(0, 2)  # Seek to end
+            pos = f.tell()
+            remainder = b''
+
+            while pos > 0 and len(lines) <= max_lines:
+                read_size = min(chunk_size, pos)
+                pos -= read_size
+                f.seek(pos)
+                chunk = f.read(read_size) + remainder
+
+                chunk_lines = chunk.split(b'\n')
+
+                if pos > 0:
+                    remainder = chunk_lines[0]
+                    lines = chunk_lines[1:] + lines
+                else:
+                    lines = chunk_lines + lines
+
+        # decode bytes to string, strip trailing newlines, and filter out empty strings
+        return [line.decode('utf-8', errors='ignore').rstrip('\r') for line in lines if line][-max_lines:]
+    except Exception:
+        return []
+
+
 @app.route("/storage/<path:filename>", methods=["GET"])
 def get_storage_file(filename):
     try:
@@ -418,10 +447,9 @@ def get_logs():
             return jsonify([])
         
         limit = request.args.get("limit", 150, type=int)
-        from collections import deque
-        with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-            lines = list(deque(f, limit))
-        return jsonify([line.rstrip("\n") for line in lines])
+        # Performance fix: do not read the entire log file to memory sequentially
+        lines = _tail_file(str(log_file), limit)
+        return jsonify(lines)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS videos (
     meta_tags TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_status ON videos(status);
+CREATE INDEX IF NOT EXISTS idx_status_discovered ON videos(status, discovered_at DESC);
 """
 
 
