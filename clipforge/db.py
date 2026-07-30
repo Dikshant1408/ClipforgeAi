@@ -31,6 +31,12 @@ CREATE TABLE IF NOT EXISTS videos (
     meta_tags TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_status ON videos(status);
+
+-- ⚡ Bolt: Compound index to optimize next_in_status querying and Dashboard filtering
+CREATE INDEX IF NOT EXISTS idx_status_discovered_at ON videos(status, discovered_at);
+
+-- ⚡ Bolt: Index to optimize monitor check for has_channel_videos
+CREATE INDEX IF NOT EXISTS idx_channel_id ON videos(channel_id);
 """
 
 

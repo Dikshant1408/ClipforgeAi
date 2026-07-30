@@ -8,3 +8,5 @@ clipforge.db
 config.json
 .venv/
 .pytest_cache/
+venv/
+*.db
