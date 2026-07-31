@@ -1,0 +1,3 @@
+## 2025-02-12 - N+1 and O(N^2) file stat bottleneck in cleanup process
+**Learning:** In `clipforge/cleanup.py`'s `enforce_quota`, evaluating `dir_size_gb` inside the file deletion loop caused an O(N^2) filesystem scan because it re-walked the entire directory via `rglob` and called `stat()` on every file for each deleted file. Additionally, the `sorted` lambda was issuing multiple `self._db.get()` queries per item, leading to an N+1 database query issue.
+**Action:** When evaluating total directory size during batch deletions, compute the initial size once and incrementally subtract deleted file sizes rather than recalculating from scratch. Use in-memory dictionaries to cache database records when sorting iterables.
