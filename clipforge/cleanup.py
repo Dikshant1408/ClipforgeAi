@@ -98,17 +98,28 @@ class Cleanup:
         # oldest published first (published_source_paths preserves insert order
         # by discovered_at via query; sort defensively here)
         published = self._db.published_source_paths()
+
+        # Performance optimization: cache DB records to avoid N+1 queries during sort
+        rec_cache = {vid: self._db.get(vid) for vid, _ in published}
         published_by_age = sorted(
             published,
-            key=lambda pair: (self._db.get(pair[0]).discovered_at
-                              if self._db.get(pair[0]) else ""))
+            key=lambda pair: (getattr(rec_cache.get(pair[0]), 'discovered_at', "")
+                              if rec_cache.get(pair[0]) else ""))
+
+        # Performance optimization: Calculate directory size once (O(N) file system scan),
+        # then incrementally subtract file sizes during deletion rather than
+        # re-calculating (O(N^2) scan) inside the loop.
+        current_size_gb = dir_size_gb(str(videos_dir))
+
         for video_id, source_path in published_by_age:
-            if dir_size_gb(str(videos_dir)) <= self._max:
+            if current_size_gb <= self._max:
                 break
             p = Path(source_path)
             if p.exists():
                 try:
+                    file_size_gb = p.stat().st_size / (1024 ** 3)
                     p.unlink()
+                    current_size_gb -= file_size_gb
                     deleted += 1
                 except OSError:
                     pass
