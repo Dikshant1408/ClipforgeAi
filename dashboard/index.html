@@ -948,7 +948,7 @@
         <div class="flex gap-2 items-center">
           <div class="search-box" style="width:260px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="video-search" placeholder="Search videos…" oninput="filterVideos()" />
+            <input type="text" id="video-search" placeholder="Search videos…" aria-label="Search videos" oninput="filterVideos()" />
           </div>
           <button class="btn btn-ghost btn-sm" onclick="loadVideos()">Refresh</button>
         </div>
@@ -978,11 +978,11 @@
         <div class="section-title">System Console Logs</div>
         <div class="flex gap-2 items-center">
           <div class="toggle-wrap" style="margin-right:16px;">
-            <label class="toggle">
+            <label class="toggle" for="log-autoscroll">
               <input type="checkbox" id="log-autoscroll" checked onchange="autoScrollLogs = this.checked;" />
               <span class="toggle-slider"></span>
             </label>
-            <span class="toggle-label" style="font-size:13px; font-weight:600;">Auto Scroll</span>
+            <label for="log-autoscroll" class="toggle-label" style="font-size:13px; font-weight:600; cursor:pointer;">Auto Scroll</label>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="loadLogs()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.14"/></svg>
@@ -1031,16 +1031,16 @@
       <div class="settings-panel active card" id="settings-panel-publishing">
         <div class="form-row">
           <div class="form-group">
-            <label>Timezone</label>
+            <label for="cfg-timezone">Timezone</label>
             <input type="text" id="cfg-timezone" placeholder="Asia/Kolkata" />
           </div>
           <div class="form-group">
-            <label>Monitor Interval (minutes)</label>
+            <label for="cfg-monitor-interval">Monitor Interval (minutes)</label>
             <input type="number" id="cfg-monitor-interval" min="1" max="1440" />
           </div>
         </div>
         <div class="form-group">
-          <label>Publish Times (comma-separated, HH:MM 24h)</label>
+          <label for="cfg-publish-times">Publish Times (comma-separated, HH:MM 24h)</label>
           <input type="text" id="cfg-publish-times" placeholder="12:00, 18:00" />
           <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Example: 12:00, 18:00</div>
         </div>
@@ -1050,21 +1050,21 @@
       <div class="settings-panel card" id="settings-panel-clipping">
         <div class="form-row">
           <div class="form-group">
-            <label>Min Clip Length (seconds)</label>
+            <label for="cfg-clip-min">Min Clip Length (seconds)</label>
             <input type="number" id="cfg-clip-min" min="5" max="300" />
           </div>
           <div class="form-group">
-            <label>Max Clip Length (seconds)</label>
+            <label for="cfg-clip-max">Max Clip Length (seconds)</label>
             <input type="number" id="cfg-clip-max" min="5" max="600" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Hook Lead (seconds)</label>
+            <label for="cfg-hook-lead">Hook Lead (seconds)</label>
             <input type="number" id="cfg-hook-lead" step="0.5" min="0" max="10" />
           </div>
           <div class="form-group">
-            <label>Crop Mode</label>
+            <label for="cfg-crop">Crop Mode</label>
             <select id="cfg-crop">
               <option value="center">center</option>
             </select>
@@ -1076,14 +1076,14 @@
       <div class="settings-panel card" id="settings-panel-ai">
         <div class="form-row">
           <div class="form-group">
-            <label>LLM Provider</label>
+            <label for="cfg-llm-provider">LLM Provider</label>
             <select id="cfg-llm-provider">
               <option value="gemini">Gemini</option>
               <option value="openai">OpenAI</option>
             </select>
           </div>
           <div class="form-group">
-            <label>LLM Model</label>
+            <label for="cfg-llm-model">LLM Model</label>
             <input type="text" id="cfg-llm-model" placeholder="gemini-flash-latest" />
           </div>
         </div>
@@ -1093,7 +1093,7 @@
       <div class="settings-panel card" id="settings-panel-whisper">
         <div class="form-row">
           <div class="form-group">
-            <label>Whisper Model</label>
+            <label for="cfg-whisper-model">Whisper Model</label>
             <select id="cfg-whisper-model">
               <option value="tiny">tiny</option>
               <option value="base">base</option>
@@ -1103,7 +1103,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Whisper Device</label>
+            <label for="cfg-whisper-device">Whisper Device</label>
             <select id="cfg-whisper-device">
               <option value="cpu">cpu</option>
               <option value="cuda">cuda</option>
@@ -1117,11 +1117,11 @@
       <div class="settings-panel card" id="settings-panel-storage">
         <div class="form-row">
           <div class="form-group">
-            <label>Storage Root Path</label>
+            <label for="cfg-storage-root">Storage Root Path</label>
             <input type="text" id="cfg-storage-root" placeholder="./storage" />
           </div>
           <div class="form-group">
-            <label>Max Disk Usage (GB)</label>
+            <label for="cfg-max-disk">Max Disk Usage (GB)</label>
             <input type="number" id="cfg-max-disk" min="1" max="2000" />
           </div>
         </div>
@@ -1131,7 +1131,7 @@
       <div class="settings-panel card" id="settings-panel-youtube">
         <div class="form-row">
           <div class="form-group">
-            <label>Privacy Status</label>
+            <label for="cfg-yt-privacy">Privacy Status</label>
             <select id="cfg-yt-privacy">
               <option value="public">public</option>
               <option value="unlisted">unlisted</option>
@@ -1139,7 +1139,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Category ID</label>
+            <label for="cfg-yt-category">Category ID</label>
             <input type="text" id="cfg-yt-category" placeholder="20 = Gaming" />
             <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">1=Film&TV, 10=Music, 20=Gaming, 22=People, 24=Entertainment</div>
           </div>
@@ -1149,7 +1149,7 @@
       <!-- Connection -->
       <div class="settings-panel card" id="settings-panel-connection">
         <div class="form-group">
-          <label>Backend API Base URL (empty for relative pathing)</label>
+          <label for="cfg-connection-base">Backend API Base URL (empty for relative pathing)</label>
           <input type="text" id="cfg-connection-base" placeholder="e.g. http://localhost:5050" />
           <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">
             If you deploy this dashboard to Vercel, specify the address of your persistent ClipForge backend server (include http/https).
@@ -1169,26 +1169,26 @@
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-title">Add Source Channel</div>
     <div class="form-group">
-      <label>Channel Name *</label>
+      <label for="ch-name">Channel Name *</label>
       <input type="text" id="ch-name" placeholder="e.g. Tarik" />
     </div>
     <div class="form-group">
-      <label>YouTube Channel ID *</label>
+      <label for="ch-id">YouTube Channel ID *</label>
       <input type="text" id="ch-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" />
       <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Find it in the channel URL or via channel settings.</div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Priority (lower = higher priority)</label>
+        <label for="ch-priority">Priority (lower = higher priority)</label>
         <input type="number" id="ch-priority" value="100" min="1" max="9999" />
       </div>
       <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:4px;">
         <div class="toggle-wrap">
-          <label class="toggle">
+          <label class="toggle" for="ch-enabled">
             <input type="checkbox" id="ch-enabled" checked />
             <span class="toggle-slider"></span>
           </label>
-          <span class="toggle-label">Enabled</span>
+          <label for="ch-enabled" class="toggle-label" style="cursor:pointer;">Enabled</label>
         </div>
       </div>
     </div>
@@ -1205,21 +1205,21 @@
     <div class="modal-title">Edit Channel</div>
     <input type="hidden" id="edit-ch-id-val" />
     <div class="form-group">
-      <label>Channel Name *</label>
+      <label for="edit-ch-name">Channel Name *</label>
       <input type="text" id="edit-ch-name" />
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Priority</label>
+        <label for="edit-ch-priority">Priority</label>
         <input type="number" id="edit-ch-priority" min="1" max="9999" />
       </div>
       <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:4px;">
         <div class="toggle-wrap">
-          <label class="toggle">
+          <label class="toggle" for="edit-ch-enabled">
             <input type="checkbox" id="edit-ch-enabled" />
             <span class="toggle-slider"></span>
           </label>
-          <span class="toggle-label">Enabled</span>
+          <label for="edit-ch-enabled" class="toggle-label" style="cursor:pointer;">Enabled</label>
         </div>
       </div>
     </div>
@@ -1236,15 +1236,15 @@
     <div class="modal-title">Edit Video Metadata</div>
     <input type="hidden" id="edit-vid-id" />
     <div class="form-group">
-      <label>Title (YouTube)</label>
+      <label for="edit-vid-title">Title (YouTube)</label>
       <input type="text" id="edit-vid-title" maxlength="100" />
     </div>
     <div class="form-group">
-      <label>Description</label>
+      <label for="edit-vid-desc">Description</label>
       <textarea id="edit-vid-desc" style="min-height:100px;"></textarea>
     </div>
     <div class="form-group">
-      <label>Tags (comma-separated)</label>
+      <label for="edit-vid-tags">Tags (comma-separated)</label>
       <input type="text" id="edit-vid-tags" placeholder="gaming, shorts, valorant" />
     </div>
     <div class="modal-footer">
@@ -1598,7 +1598,7 @@ async function loadStats() {
   } else {
     recEl.innerHTML = recent.map(v => `
       <div class="recent-item">
-        <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" class="recent-thumb" style="text-decoration:none;">
+        <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" class="recent-thumb" style="text-decoration:none;" aria-label="Watch ${esc(v.title)} on YouTube">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </a>
         <div>
