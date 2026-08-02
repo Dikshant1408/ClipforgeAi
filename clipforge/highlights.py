@@ -27,30 +27,49 @@ def energy_score(rms: float, max_rms: float) -> float:
 
 
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
+    """
+    Creates an energy function for a WAV file.
+    Optimized to read the file into memory once, eliminating repeated I/O
+    overhead when evaluating many candidate windows.
+    """
     import wave
     import numpy as np
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            channels = w.getnchannels()
+            sampwidth = w.getsampwidth()
+            if sampwidth != 2:
+                return lambda start, end: 0.0
+            nframes = w.getnframes()
+            data = w.readframes(nframes)
+            # Store as int16 in memory (efficient), cast to float32 on demand
+            # reshape it so that each frame (potentially multi-channel) is a row
+            all_samples = np.frombuffer(data, dtype=np.int16).reshape(-1, channels)
+    except Exception:
+        return lambda start, end: 0.0
+
     def energy_func(start: float, end: float) -> float:
         try:
-            with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
-                w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
-                data = w.readframes(frames_to_read)
-                samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+            start_frame = int(start * sr)
+            end_frame = int(end * sr)
+
+            if start_frame >= nframes:
+                return 0.0
+
+            end_frame = min(end_frame, nframes)
+            if start_frame >= end_frame:
+                return 0.0
+
+            slice_samples = all_samples[start_frame:end_frame]
+            if len(slice_samples) == 0:
+                return 0.0
+
+            return float(np.sqrt(np.mean(slice_samples.astype(np.float32) ** 2)))
         except Exception:
             return 0.0
+
     return energy_func
 
 

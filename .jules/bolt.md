@@ -1,0 +1,3 @@
+## 2024-05-24 - WAV File Repeated I/O Bottleneck
+**Learning:** Found a severe codebase-specific I/O bottleneck in `clipforge/highlights.py`'s `make_wav_energy_func`. It returned a closure that opened the WAV file (`wave.open`) for every single candidate window evaluation. With thousands of windows evaluated per video, this caused massive slowdowns (from <1s to over 40-60s per video just for energy calculation).
+**Action:** When a function returns a closure that will be executed many times (e.g., scoring functions used in sorting or looping over many items), any static I/O like reading a file should be hoisted out of the closure and read into memory once.
