@@ -1,0 +1,3 @@
+## 2024-03-24 - Custom Toggle Hit Areas
+**Learning:** Custom UI toggle switches that use non-semantic elements for visually styling labels (e.g., `<span class="toggle-label">`) reduce accessibility and usability by ignoring mouse clicks and removing the text from the control's hit area.
+**Action:** Always wrap toggle texts with semantic `<label for="[id]">` tags tied directly to the toggle's `<input id="[id]">` element. Additionally, ensure the associated CSS sets `cursor: pointer;` on the label so users understand the text itself is an interactive trigger for the switch.
