@@ -1,0 +1,3 @@
+## 2025-02-28 - Optimize Cleanup.enforce_quota performance
+**Learning:** Found an $O(N \cdot M)$ complexity quadratic disk scaling issue and N+1 query problem inside `Cleanup.enforce_quota`. For `N` records, it was calling `dir_size_gb` which took $O(M)$ where $M$ is the number of files in the directory. Furthermore, the `published_source_paths` response was sorted using `self._db.get(video_id)` causing N+1 queries.
+**Action:** Avoid querying `dir_size_gb` in every loop iteration by computing it once, then modifying it as files are deleted. Move sorting by `discovered_at` directly into the database query `published_source_paths` in `db.py` to offload work to SQLite and eliminate N+1 queries.
