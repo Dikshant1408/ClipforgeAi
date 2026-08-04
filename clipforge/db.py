@@ -159,5 +159,5 @@ class Database:
     def published_source_paths(self) -> list[tuple[str, str]]:
         c = self._conn.execute(
             "SELECT video_id, source_path FROM videos "
-            "WHERE status=? AND source_path<>''", (Status.PUBLISHED.value,))
+            "WHERE status=? AND source_path<>'' ORDER BY discovered_at ASC", (Status.PUBLISHED.value,))
         return [(r["video_id"], r["source_path"]) for r in c.fetchall()]
