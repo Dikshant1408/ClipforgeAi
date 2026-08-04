@@ -1,0 +1,3 @@
+## 2024-06-25 - Avoid disk traversal (O(N*M)) inside loops
+**Learning:** Found an `O(N*M)` nested disk traversal in `cleanup.py`. `enforce_quota` iterated through $N$ database records, running `dir_size_gb` inside the loop, which searched all $M$ files in `videos/` recursively using `Path.rglob("*")` inside a `while` loop each iteration. Also found an N+1 query: `published_source_paths` returned unsorted database rows, which Python sorted using `key=lambda p: self._db.get(p[0]).discovered_at`, creating an additional DB query per file.
+**Action:** Let SQLite sort rows directly using `ORDER BY discovered_at ASC`. Lift disk measurements (`dir_size_gb`) out of loops, compute once, and manually update the state variable inside the loop instead.
