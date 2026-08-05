@@ -377,11 +377,10 @@
     @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
     /* ============================================================ TOGGLE */
-    .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
     .toggle {
       position: relative;
       width: 44px; height: 24px;
-      cursor: pointer;
     }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-slider {
@@ -390,6 +389,10 @@
       background: var(--muted);
       border-radius: 99px;
       transition: var(--transition);
+    }
+    .toggle input:focus-visible + .toggle-slider {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
     }
     .toggle-slider::before {
       content: '';
@@ -977,13 +980,13 @@
       <div class="section-header mb-4">
         <div class="section-title">System Console Logs</div>
         <div class="flex gap-2 items-center">
-          <div class="toggle-wrap" style="margin-right:16px;">
-            <label class="toggle">
+          <label class="toggle-wrap" style="margin-right:16px;">
+            <div class="toggle">
               <input type="checkbox" id="log-autoscroll" checked onchange="autoScrollLogs = this.checked;" />
               <span class="toggle-slider"></span>
-            </label>
+            </div>
             <span class="toggle-label" style="font-size:13px; font-weight:600;">Auto Scroll</span>
-          </div>
+          </label>
           <button class="btn btn-ghost btn-sm" onclick="loadLogs()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.14"/></svg>
             Refresh Logs
@@ -1183,13 +1186,13 @@
         <input type="number" id="ch-priority" value="100" min="1" max="9999" />
       </div>
       <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:4px;">
-        <div class="toggle-wrap">
-          <label class="toggle">
+        <label class="toggle-wrap">
+          <div class="toggle">
             <input type="checkbox" id="ch-enabled" checked />
             <span class="toggle-slider"></span>
-          </label>
+          </div>
           <span class="toggle-label">Enabled</span>
-        </div>
+        </label>
       </div>
     </div>
     <div class="modal-footer">
@@ -1214,13 +1217,13 @@
         <input type="number" id="edit-ch-priority" min="1" max="9999" />
       </div>
       <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:4px;">
-        <div class="toggle-wrap">
-          <label class="toggle">
+        <label class="toggle-wrap">
+          <div class="toggle">
             <input type="checkbox" id="edit-ch-enabled" />
             <span class="toggle-slider"></span>
-          </label>
+          </div>
           <span class="toggle-label">Enabled</span>
-        </div>
+        </label>
       </div>
     </div>
     <div class="modal-footer">
