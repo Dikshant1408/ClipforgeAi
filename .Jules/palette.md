@@ -1,0 +1,3 @@
+## 2025-02-20 - Custom Toggle Structure Accessibility
+**Learning:** When building custom toggle switches using an input and a styled visual slider alongside descriptive text, wrapping only the input/slider in a `<label>` (while leaving the descriptive text in a sibling element) creates poor UX. The descriptive text becomes unclickable.
+**Action:** Always make sure to wrap the entire block, including the descriptive text, in a single `<label>` element so clicking the label text will toggle the input state. Additionally, move the `cursor: pointer` to the outermost `<label>` wrapper so it is obvious to the user that the entire area is actionable.
