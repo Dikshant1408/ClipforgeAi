@@ -1,0 +1,3 @@
+## 2024-05-18 - Audio Energy Computation Bottleneck
+**Learning:** The previous implementation of `make_wav_energy_func` was opening the `.wav` file, seeking, and reading frames on every call, leading to extreme O(N^2) file I/O overhead when evaluated over tens of thousands of candidate highlight windows.
+**Action:** When a function returned by a closure will be called heavily (like energy functions for sliding windows), pre-compute state (like chunked cumulative sums/integral arrays) in the closure initialization so that the returned function only does O(1) in-memory lookups instead of disk I/O.
