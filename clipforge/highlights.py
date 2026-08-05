@@ -29,28 +29,54 @@ def energy_score(rms: float, max_rms: float) -> float:
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
     import wave
     import numpy as np
+
+    # Pre-compute the energy for the entire file in chunks using a cumulative
+    # sum array. This prevents O(N^2) file I/O operations and drops time
+    # complexity of the energy lookup to O(1) for each candidate window.
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            if w.getsampwidth() != 2:
+                return lambda s, e: 0.0
+
+            chunk_duration = 0.1
+            chunk_frames = int(sr * chunk_duration)
+
+            chunk_sq_sums = []
+            chunk_counts = []
+
+            while True:
+                frames = w.readframes(chunk_frames)
+                if not frames:
+                    break
+                samples = np.frombuffer(frames, dtype=np.int16).astype(np.float32)
+                chunk_sq_sums.append(np.sum(samples ** 2))
+                chunk_counts.append(len(samples))
+
+            cum_sq = np.concatenate(([0.0], np.cumsum(chunk_sq_sums)))
+            cum_count = np.concatenate(([0], np.cumsum(chunk_counts)))
+            num_chunks = len(chunk_sq_sums)
+    except Exception:
+        return lambda s, e: 0.0
+
     def energy_func(start: float, end: float) -> float:
-        try:
-            with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
-                w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
-                data = w.readframes(frames_to_read)
-                samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
-        except Exception:
+        start_chunk = int(start / chunk_duration)
+        end_chunk = int(np.ceil(end / chunk_duration))
+
+        start_chunk = max(0, min(start_chunk, num_chunks))
+        end_chunk = max(0, min(end_chunk, num_chunks))
+
+        if start_chunk >= end_chunk:
             return 0.0
+
+        sq_sum = cum_sq[end_chunk] - cum_sq[start_chunk]
+        count = cum_count[end_chunk] - cum_count[start_chunk]
+
+        if count == 0:
+            return 0.0
+
+        return float(np.sqrt(sq_sum / count))
+
     return energy_func
 
 
