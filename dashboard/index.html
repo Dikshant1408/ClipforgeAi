@@ -189,6 +189,7 @@
     }
     .btn:active { transform: scale(.96); }
     .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-glow); }
 
     .btn-primary {
       background: var(--primary);
@@ -402,7 +403,8 @@
     }
     .toggle input:checked + .toggle-slider { background: var(--primary); }
     .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
-    .toggle-label { font-size: 14px; color: var(--text-primary); }
+    .toggle input:focus-visible + .toggle-slider { box-shadow: 0 0 0 3px var(--primary-glow); }
+    .toggle-label { font-size: 14px; color: var(--text-primary); cursor: pointer; }
 
     /* ============================================================ ALERT / TOAST */
     #toast-container {
@@ -948,7 +950,7 @@
         <div class="flex gap-2 items-center">
           <div class="search-box" style="width:260px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="video-search" placeholder="Search videos…" oninput="filterVideos()" />
+            <input type="text" id="video-search" placeholder="Search videos…" aria-label="Search videos" oninput="filterVideos()" />
           </div>
           <button class="btn btn-ghost btn-sm" onclick="loadVideos()">Refresh</button>
         </div>
@@ -982,7 +984,7 @@
               <input type="checkbox" id="log-autoscroll" checked onchange="autoScrollLogs = this.checked;" />
               <span class="toggle-slider"></span>
             </label>
-            <span class="toggle-label" style="font-size:13px; font-weight:600;">Auto Scroll</span>
+            <label for="log-autoscroll" class="toggle-label" style="font-size:13px; font-weight:600;">Auto Scroll</label>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="loadLogs()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.14"/></svg>
@@ -1188,7 +1190,7 @@
             <input type="checkbox" id="ch-enabled" checked />
             <span class="toggle-slider"></span>
           </label>
-          <span class="toggle-label">Enabled</span>
+          <label for="ch-enabled" class="toggle-label">Enabled</label>
         </div>
       </div>
     </div>
@@ -1219,7 +1221,7 @@
             <input type="checkbox" id="edit-ch-enabled" />
             <span class="toggle-slider"></span>
           </label>
-          <span class="toggle-label">Enabled</span>
+          <label for="edit-ch-enabled" class="toggle-label">Enabled</label>
         </div>
       </div>
     </div>
@@ -1598,7 +1600,7 @@ async function loadStats() {
   } else {
     recEl.innerHTML = recent.map(v => `
       <div class="recent-item">
-        <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" class="recent-thumb" style="text-decoration:none;">
+        <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" class="recent-thumb" aria-label="Recent video thumbnail" style="text-decoration:none;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </a>
         <div>
