@@ -123,6 +123,7 @@
       border-left-color: var(--primary);
       text-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
     }
+    .nav-item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
     .nav-item svg { opacity: .8; flex-shrink: 0; }
 
     .sidebar-status {
@@ -757,31 +758,31 @@
   </div>
 
   <div class="sidebar-section-title">Overview</div>
-  <div class="nav-item active" onclick="navigate('overview')" id="nav-overview">
+  <div class="nav-item active" onclick="navigate('overview')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();navigate('overview');}" tabindex="0" role="button" id="nav-overview">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     Dashboard
   </div>
 
   <div class="sidebar-section-title">Management</div>
-  <div class="nav-item" onclick="navigate('channels')" id="nav-channels">
+  <div class="nav-item" onclick="navigate('channels')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();navigate('channels');}" tabindex="0" role="button" id="nav-channels">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Channels
   </div>
-  <div class="nav-item" onclick="navigate('pipeline')" id="nav-pipeline">
+  <div class="nav-item" onclick="navigate('pipeline')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();navigate('pipeline');}" tabindex="0" role="button" id="nav-pipeline">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Pipeline
   </div>
-  <div class="nav-item" onclick="navigate('videos')" id="nav-videos">
+  <div class="nav-item" onclick="navigate('videos')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();navigate('videos');}" tabindex="0" role="button" id="nav-videos">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
     Videos (Ready)
   </div>
 
   <div class="sidebar-section-title">System</div>
-  <div class="nav-item" onclick="navigate('logs')" id="nav-logs">
+  <div class="nav-item" onclick="navigate('logs')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();navigate('logs');}" tabindex="0" role="button" id="nav-logs">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 14 15 20 9"/><polyline points="14 9 20 9 20 15"/></svg>
     System Logs
   </div>
-  <div class="nav-item" onclick="navigate('settings')" id="nav-settings">
+  <div class="nav-item" onclick="navigate('settings')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();navigate('settings');}" tabindex="0" role="button" id="nav-settings">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
   </div>
