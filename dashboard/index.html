@@ -1169,22 +1169,22 @@
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-title">Add Source Channel</div>
     <div class="form-group">
-      <label>Channel Name *</label>
+      <label for="ch-name">Channel Name *</label>
       <input type="text" id="ch-name" placeholder="e.g. Tarik" />
     </div>
     <div class="form-group">
-      <label>YouTube Channel ID *</label>
+      <label for="ch-id">YouTube Channel ID *</label>
       <input type="text" id="ch-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" />
       <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Find it in the channel URL or via channel settings.</div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Priority (lower = higher priority)</label>
+        <label for="ch-priority">Priority (lower = higher priority)</label>
         <input type="number" id="ch-priority" value="100" min="1" max="9999" />
       </div>
       <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:4px;">
         <div class="toggle-wrap">
-          <label class="toggle">
+          <label class="toggle" for="ch-enabled">
             <input type="checkbox" id="ch-enabled" checked />
             <span class="toggle-slider"></span>
           </label>
@@ -1205,17 +1205,17 @@
     <div class="modal-title">Edit Channel</div>
     <input type="hidden" id="edit-ch-id-val" />
     <div class="form-group">
-      <label>Channel Name *</label>
+      <label for="edit-ch-name">Channel Name *</label>
       <input type="text" id="edit-ch-name" />
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Priority</label>
+        <label for="edit-ch-priority">Priority</label>
         <input type="number" id="edit-ch-priority" min="1" max="9999" />
       </div>
       <div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:4px;">
         <div class="toggle-wrap">
-          <label class="toggle">
+          <label class="toggle" for="edit-ch-enabled">
             <input type="checkbox" id="edit-ch-enabled" />
             <span class="toggle-slider"></span>
           </label>
@@ -1236,15 +1236,15 @@
     <div class="modal-title">Edit Video Metadata</div>
     <input type="hidden" id="edit-vid-id" />
     <div class="form-group">
-      <label>Title (YouTube)</label>
+      <label for="edit-vid-title">Title (YouTube)</label>
       <input type="text" id="edit-vid-title" maxlength="100" />
     </div>
     <div class="form-group">
-      <label>Description</label>
+      <label for="edit-vid-desc">Description</label>
       <textarea id="edit-vid-desc" style="min-height:100px;"></textarea>
     </div>
     <div class="form-group">
-      <label>Tags (comma-separated)</label>
+      <label for="edit-vid-tags">Tags (comma-separated)</label>
       <input type="text" id="edit-vid-tags" placeholder="gaming, shorts, valorant" />
     </div>
     <div class="modal-footer">
