@@ -1,0 +1,3 @@
+## 2024-05-18 - Making Custom CSS Toggles Accessible
+**Learning:** Custom CSS toggle switches (where `<input type="checkbox">` is hidden using `opacity: 0; width: 0; height: 0;`) cannot receive keyboard focus, breaking keyboard accessibility. Also, wrapping the checkbox and a loose `<span>` text label in a `.toggle-wrap` does not associate them for screen readers.
+**Action:** When creating custom CSS toggles, hide the input visually but keep it focusable (`position: absolute; opacity: 0; width: 1px; height: 1px;`). Use `input:focus-visible + .slider` to add focus rings. Always use a proper `<label for="...">` element for the visible text so it is click-targetable and screen reader friendly.
