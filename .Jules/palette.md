@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility for Custom Interactive Elements
+**Learning:** When using `<div class="nav-item">` or similar non-interactive HTML elements as clickable navigation items or tabs, they lack inherent keyboard accessibility and semantic meaning. Screen readers don't know they are buttons, and keyboard users cannot focus or activate them.
+**Action:** Always ensure custom interactive elements like `div` or `span` tabs have `role="button"`, `tabindex="0"`, a visual `:focus-visible` state, and an `onkeydown` handler to capture 'Enter' and 'Space' keys, or refactor them to use native `<button>` tags when possible.
