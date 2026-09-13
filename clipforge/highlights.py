@@ -27,30 +27,59 @@ def energy_score(rms: float, max_rms: float) -> float:
 
 
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
+    """
+    Creates an energy function optimized for O(1) interval queries.
+    Uses O(M) time and space initially to load audio and compute cumulative sums,
+    instead of reading from disk on every O(N) query.
+    """
     import wave
     import numpy as np
-    def energy_func(start: float, end: float) -> float:
-        try:
-            with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
-                w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
-                data = w.readframes(frames_to_read)
-                samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
-        except Exception:
-            return 0.0
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            sampwidth = w.getsampwidth()
+            nchannels = w.getnchannels()
+            nframes = w.getnframes()
+
+            if sampwidth != 2:
+                return lambda start, end: 0.0
+
+            data = w.readframes(nframes)
+            samples = np.frombuffer(data, dtype=np.int16)
+
+            # Using float64 is critical here to avoid catastrophic precision loss
+            # in cumsum for large multi-channel audio arrays.
+            sq_samples = samples.astype(np.float64) ** 2
+            cumsum_sq = np.zeros(len(sq_samples) + 1, dtype=np.float64)
+            cumsum_sq[1:] = np.cumsum(sq_samples)
+
+        def energy_func(start: float, end: float) -> float:
+            start_frame = int(start * sr)
+            end_frame = int(end * sr)
+
+            start_frame = max(0, min(start_frame, nframes))
+            end_frame = max(0, min(end_frame, nframes))
+
+            if start_frame >= end_frame:
+                return 0.0
+
+            # Time-based frame calculations must be multiplied by nchannels
+            # because the samples array is a 1D interleaved buffer.
+            idx_start = start_frame * nchannels
+            idx_end = end_frame * nchannels
+
+            window_sum_sq = cumsum_sq[idx_end] - cumsum_sq[idx_start]
+            num_samples = idx_end - idx_start
+
+            if num_samples <= 0:
+                return 0.0
+
+            return float(np.sqrt(max(0.0, window_sum_sq / num_samples)))
+
+    except Exception:
+        return lambda start, end: 0.0
+
     return energy_func
 
 
