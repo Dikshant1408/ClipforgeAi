@@ -1,0 +1,3 @@
+## 2024-10-18 - Avoid Memory Regressions and File Descriptor Leaks in Audio Caching
+**Learning:** When attempting to optimize disk I/O for audio processing (e.g., repeatedly calculating window RMS), do NOT load the entire audio file into large float arrays, as it creates a severe Out-Of-Memory (OOM) risk for multi-hour files. Similarly, if caching file handles within closures, ensure the handles are closed to avoid "Too many open files" errors and race conditions in concurrent access.
+**Action:** Use an on-demand cache bounded to a sensible limit (e.g., dictionary) and open the file explicitly only for the needed segment within a `with` block to guarantee cleanup, ensuring correctness, O(1) mostly caching behavior without any OOM or FD leak risk.
