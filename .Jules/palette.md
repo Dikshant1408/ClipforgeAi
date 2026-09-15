@@ -1,0 +1,3 @@
+## 2024-05-24 - Implicit label relationships in dashboard modals
+**Learning:** Found that custom checkbox toggles and standard inputs within the Flask-rendered dashboard modals were relying on implicit visual proximity rather than explicit semantic links (e.g., missing `for` attributes connecting `<label>` to `<input id="...">`). Screen readers couldn't properly read these configurations.
+**Action:** Always ensure any `<label>` explicitly references its input ID via the `for` attribute in static HTML forms. For custom visual toggles wrapped inside labels, either wrap the input and span securely or explicitly add the `for` attribute referencing the nested input ID for robust click-to-toggle access.
