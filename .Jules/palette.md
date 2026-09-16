@@ -1,0 +1,3 @@
+## 2024-05-24 - Form Control A11y and Icon-only Buttons
+**Learning:** Found that the dashboard UI relied heavily on \`<label>\` elements that were not explicitly linked to their corresponding inputs using the \`for\` attribute (and matching \`id\`). Additionally, multiple icon-only buttons (like edit, delete, poll, and link buttons) lacked \`aria-label\` attributes, and custom checkbox toggles lacked \`for\` attribute linking.
+**Action:** When working on similar static HTML dashboards, automatically run regex/scripts to match \`for\` attributes on all form controls, ensuring screen readers can correctly associate them. Add \`aria-label\` to any button or link whose content is purely an SVG icon or where the text needs additional screen reader context.
