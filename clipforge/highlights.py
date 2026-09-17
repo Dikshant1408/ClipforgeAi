@@ -27,30 +27,74 @@ def energy_score(rms: float, max_rms: float) -> float:
 
 
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
+    """
+    Creates an energy function optimized for dense overlapping audio queries.
+    Uses an LRU cache of 60-second chunks and O(1) interval sums via np.cumsum.
+    """
     import wave
+    import functools
     import numpy as np
-    def energy_func(start: float, end: float) -> float:
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            sampwidth = w.getsampwidth()
+            nchannels = w.getnchannels()
+            nframes = w.getnframes()
+    except Exception:
+        return lambda start, end: 0.0
+
+    if sampwidth != 2:
+        return lambda start, end: 0.0
+
+    chunk_frames = 60 * sr
+
+    @functools.lru_cache(maxsize=16)
+    def _read_chunk(chunk_idx: int) -> np.ndarray:
         try:
             with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
+                start_frame = min(chunk_idx * chunk_frames, nframes)
                 w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
+                frames_to_read = min(chunk_frames, nframes - start_frame)
                 if frames_to_read <= 0:
-                    return 0.0
+                    return np.array([0.0], dtype=np.float64)
                 data = w.readframes(frames_to_read)
                 samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+                # O(1) sum via cumsum over float64 to avoid precision loss on large chunks
+                return np.concatenate(([0.0], np.cumsum(samples.astype(np.float64) ** 2)))
+        except Exception:
+            return np.array([0.0], dtype=np.float64)
+
+    def energy_func(start: float, end: float) -> float:
+        try:
+            start_idx = int(start * sr) * nchannels
+            end_idx = int(end * sr) * nchannels
+            chunk_size = chunk_frames * nchannels
+
+            start_chunk = start_idx // chunk_size
+            end_chunk = end_idx // chunk_size
+
+            total_sq_sum = 0.0
+            total_count = 0
+
+            for c in range(start_chunk, end_chunk + 1):
+                cumsum = _read_chunk(c)
+                chunk_start_idx = c * chunk_size
+
+                # bounds relative to this chunk
+                s = max(0, start_idx - chunk_start_idx)
+                e = min(len(cumsum) - 1, end_idx - chunk_start_idx)
+
+                if s < e:
+                    total_sq_sum += cumsum[e] - cumsum[s]
+                    total_count += (e - s)
+
+            if total_count <= 0:
+                return 0.0
+            return float(np.sqrt(total_sq_sum / total_count))
         except Exception:
             return 0.0
+
     return energy_func
 
 
