@@ -1,0 +1,3 @@
+## 2024-05-18 - Added form labels and aria-hidden to SVGs
+**Learning:** In dashboard components containing configuration toggles and form elements, explicitly linking `<label>` tags with their corresponding input `id` via the `for` attribute and adding `aria-label` to form inputs is essential for accessibility. Moreover, SVG icons in buttons that contain text should have `aria-hidden="true"` so that screen readers don't double-announce the icon and the text.
+**Action:** Always link form labels to their inputs utilizing the `for` attribute and ensure icon-only fields have `aria-label`. Use `aria-hidden` on decorative SVG icons in buttons with text.
