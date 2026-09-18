@@ -29,28 +29,78 @@ def energy_score(rms: float, max_rms: float) -> float:
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
     import wave
     import numpy as np
-    def energy_func(start: float, end: float) -> float:
+    from functools import lru_cache
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            sampwidth = w.getsampwidth()
+            nchannels = w.getnchannels()
+            nframes = w.getnframes()
+    except Exception:
+        return lambda s, e: 0.0
+
+    if sampwidth != 2:
+        return lambda s, e: 0.0
+
+    chunk_duration = 30.0 # seconds
+    chunk_frames = int(chunk_duration * sr)
+
+    @lru_cache(maxsize=32)
+    def get_chunk(chunk_idx: int) -> np.ndarray:
         try:
             with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
+                start_frame = chunk_idx * chunk_frames
+                if start_frame >= nframes:
+                    return np.array([0.0], dtype=np.float64)
                 w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
+                frames_to_read = min(chunk_frames, nframes - start_frame)
                 data = w.readframes(frames_to_read)
-                samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+                # Cast to float64 to prevent precision loss in large cumsums
+                samples = np.frombuffer(data, dtype=np.int16).astype(np.float64)
+                sq = samples ** 2
+                cumsum = np.zeros(len(sq) + 1, dtype=np.float64)
+                np.cumsum(sq, out=cumsum[1:])
+                return cumsum
         except Exception:
+            return np.array([0.0], dtype=np.float64)
+
+    def energy_func(start: float, end: float) -> float:
+        # Calculate RMS energy for [start, end] leveraging pre-computed chunk cumsums
+        start_f = int(start * sr)
+        end_f = int(end * sr)
+        if start_f >= nframes:
             return 0.0
+        end_f = min(end_f, nframes)
+        if start_f >= end_f:
+            return 0.0
+
+        total_sq = 0.0
+        total_samples = (end_f - start_f) * nchannels
+
+        start_chunk = start_f // chunk_frames
+        end_chunk = end_f // chunk_frames
+
+        for c in range(start_chunk, end_chunk + 1):
+            c_start_f = c * chunk_frames
+            c_end_f = min(c_start_f + chunk_frames, nframes)
+
+            i_start = max(start_f, c_start_f)
+            i_end = min(end_f, c_end_f)
+            if i_start < i_end:
+                cumsum = get_chunk(c)
+                idx_start = (i_start - c_start_f) * nchannels
+                idx_end = (i_end - c_start_f) * nchannels
+
+                idx_end = min(idx_end, len(cumsum) - 1)
+                idx_start = min(idx_start, len(cumsum) - 1)
+
+                total_sq += cumsum[idx_end] - cumsum[idx_start]
+
+        if total_samples <= 0:
+            return 0.0
+        return float(np.sqrt(total_sq / total_samples))
+
     return energy_func
 
 
