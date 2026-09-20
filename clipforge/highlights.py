@@ -29,28 +29,92 @@ def energy_score(rms: float, max_rms: float) -> float:
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
     import wave
     import numpy as np
-    def energy_func(start: float, end: float) -> float:
+    import functools
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            sampwidth = w.getsampwidth()
+            nchannels = w.getnchannels()
+            nframes = w.getnframes()
+    except Exception:
+        return lambda s, e: 0.0
+
+    if sampwidth != 2:
+        return lambda s, e: 0.0
+
+    # Read the file in chunks to avoid OOM on large files
+    # and cache them using LRU to speed up overlapping sliding window queries.
+    CHUNK_DURATION = 60.0  # seconds
+    CHUNK_FRAMES = int(CHUNK_DURATION * sr)
+
+    @functools.lru_cache(maxsize=8)
+    def get_chunk(chunk_idx: int) -> np.ndarray:
         try:
             with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
+                start_frame = chunk_idx * CHUNK_FRAMES
+                if start_frame >= nframes:
+                    return np.zeros(1, dtype=np.float64)
                 w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
+                frames_to_read = min(CHUNK_FRAMES, nframes - start_frame)
                 data = w.readframes(frames_to_read)
                 samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+                # Compute cumulative sum of squared samples for O(1) energy queries.
+                # Cast to float64 is required to avoid severe precision loss on large arrays.
+                samples_sq = samples.astype(np.float64) ** 2
+                cumsum = np.zeros(len(samples_sq) + 1, dtype=np.float64)
+                cumsum[1:] = np.cumsum(samples_sq)
+                return cumsum
+        except Exception:
+            return np.zeros(1, dtype=np.float64)
+
+    def energy_func(start: float, end: float) -> float:
+        try:
+            start_frame = int(start * sr)
+            end_frame = int(end * sr)
+
+            if start_frame >= nframes:
+                return 0.0
+
+            end_frame = min(end_frame, nframes)
+            if start_frame >= end_frame:
+                return 0.0
+
+            total_sum_sq = 0.0
+            total_samples = 0
+
+            curr_frame = start_frame
+            while curr_frame < end_frame:
+                chunk_idx = curr_frame // CHUNK_FRAMES
+                chunk_start_frame = chunk_idx * CHUNK_FRAMES
+                chunk_end_frame = min((chunk_idx + 1) * CHUNK_FRAMES, end_frame, nframes)
+
+                local_start_frame = curr_frame - chunk_start_frame
+                local_end_frame = chunk_end_frame - chunk_start_frame
+
+                # Multiply by nchannels as array indexing is 1D across all channels
+                idx_start = local_start_frame * nchannels
+                idx_end = local_end_frame * nchannels
+
+                cumsum = get_chunk(chunk_idx)
+
+                idx_end = min(idx_end, len(cumsum) - 1)
+                idx_start = min(idx_start, len(cumsum) - 1)
+
+                if idx_end > idx_start:
+                    total_sum_sq += (cumsum[idx_end] - cumsum[idx_start])
+                    total_samples += (idx_end - idx_start)
+
+                curr_frame = chunk_end_frame
+
+            if total_samples <= 0:
+                return 0.0
+
+            return float(np.sqrt(total_sum_sq / total_samples))
+
         except Exception:
             return 0.0
+
     return energy_func
 
 
