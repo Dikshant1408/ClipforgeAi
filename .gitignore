@@ -8,3 +8,4 @@ clipforge.db
 config.json
 .venv/
 .pytest_cache/
+.mypy_cache/
