@@ -27,30 +27,93 @@ def energy_score(rms: float, max_rms: float) -> float:
 
 
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
+    """
+    Creates an energy evaluation function for a WAV file.
+    Optimized to use O(1) queries using precomputed cumulative sums over LRU-cached chunks.
+    This avoids slow repeated disk I/O and array calculations for overlapping windows.
+    """
     import wave
     import numpy as np
-    def energy_func(start: float, end: float) -> float:
+    import functools
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            sampwidth = w.getsampwidth()
+            nchannels = w.getnchannels()
+            nframes = w.getnframes()
+    except Exception:
+        return lambda s, e: 0.0
+
+    if sampwidth != 2:
+        return lambda s, e: 0.0
+
+    # Read chunks of 5 minutes to balance memory usage and I/O efficiency
+    CHUNK_FRAMES = sr * 60 * 5
+
+    @functools.lru_cache(maxsize=8)
+    def get_chunk_cumsum(chunk_idx: int):
         try:
             with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
+                start_frame = chunk_idx * CHUNK_FRAMES
+                if start_frame >= nframes:
+                    return np.array([], dtype=np.float64), 0
                 w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
+                frames_to_read = min(CHUNK_FRAMES, nframes - start_frame)
                 data = w.readframes(frames_to_read)
                 samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
+
+                # float64 is strictly required here to prevent severe precision loss / overflow
+                # on large cumulative sums of squared samples.
+                sq = samples.astype(np.float64) ** 2
+                cs = np.empty(len(sq) + 1, dtype=np.float64)
+                cs[0] = 0.0
+                np.cumsum(sq, out=cs[1:])
+                return cs, frames_to_read
+        except Exception:
+            return np.array([], dtype=np.float64), 0
+
+    def energy_func(start: float, end: float) -> float:
+        try:
+            start_frame = int(start * sr)
+            end_frame = int(end * sr)
+            if start_frame >= nframes or start_frame >= end_frame:
+                return 0.0
+            end_frame = min(end_frame, nframes)
+
+            chunk_idx_start = start_frame // CHUNK_FRAMES
+            chunk_idx_end = end_frame // CHUNK_FRAMES
+
+            if chunk_idx_start == chunk_idx_end:
+                cs, chunk_frames = get_chunk_cumsum(chunk_idx_start)
+                if len(cs) == 0:
                     return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+                rel_start = (start_frame % CHUNK_FRAMES) * nchannels
+                rel_end = (end_frame % CHUNK_FRAMES) * nchannels
+
+                if rel_end > chunk_frames * nchannels:
+                    rel_end = chunk_frames * nchannels
+
+                if rel_start >= rel_end:
+                    return 0.0
+
+                sum_sq = cs[rel_end] - cs[rel_start]
+                mean_sq = sum_sq / (rel_end - rel_start)
+                return float(np.sqrt(max(0.0, mean_sq)))
+            else:
+                # Fallback for candidate windows spanning across chunk boundaries.
+                # Since candidate windows are short (e.g. 20-60s) this path is rarely hit.
+                with wave.open(wav_path, "rb") as w:
+                    w.setpos(start_frame)
+                    frames_to_read = end_frame - start_frame
+                    data = w.readframes(frames_to_read)
+                    samples = np.frombuffer(data, dtype=np.int16)
+                    if len(samples) == 0:
+                        return 0.0
+                    return float(np.sqrt(np.mean(samples.astype(np.float64) ** 2)))
         except Exception:
             return 0.0
+
     return energy_func
 
 
