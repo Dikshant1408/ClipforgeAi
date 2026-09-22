@@ -27,30 +27,102 @@ def energy_score(rms: float, max_rms: float) -> float:
 
 
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
+    """Creates a function to calculate RMS energy of a wave file over a time range.
+    Optimized with chunked lru_cache and O(1) cumsum lookups to avoid overlapping reads."""
     import wave
     import numpy as np
-    def energy_func(start: float, end: float) -> float:
+    from functools import lru_cache
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            sampwidth = w.getsampwidth()
+            nchannels = w.getnchannels()
+            nframes = w.getnframes()
+    except Exception:
+        return lambda start, end: 0.0
+
+    if sampwidth != 2:
+        return lambda start, end: 0.0
+
+    # Read the audio in chunks of 60 seconds
+    CHUNK_S = 60.0
+    CHUNK_FRAMES = int(CHUNK_S * sr)
+    CHUNK_SAMPLES = CHUNK_FRAMES * nchannels
+
+    # Cache recent chunks. We use 8 to keep memory low (8 * 60s * 48kHz * 2ch * 8bytes ~ 3.6MB per chunk)
+    @lru_cache(maxsize=8)
+    def get_chunk_cumsum(chunk_idx: int) -> np.ndarray:
         try:
             with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
+                start_frame = chunk_idx * CHUNK_FRAMES
+                if start_frame >= nframes:
+                    return np.array([0.0], dtype=np.float64)
                 w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
+                frames_to_read = min(CHUNK_FRAMES, nframes - start_frame)
                 data = w.readframes(frames_to_read)
                 samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+
+                # Must use float64 for sum of squares to prevent severe precision loss on large arrays
+                sq = samples.astype(np.float64) ** 2
+
+                # Pre-compute cumulative sums to allow O(1) queries for any sub-segment
+                cs = np.empty(len(sq) + 1, dtype=np.float64)
+                cs[0] = 0.0
+                np.cumsum(sq, out=cs[1:])
+                return cs
+        except Exception:
+            return np.array([0.0], dtype=np.float64)
+
+    def energy_func(start: float, end: float) -> float:
+        try:
+            start_frame = int(start * sr)
+            end_frame = int(end * sr)
+            if start_frame >= nframes:
+                return 0.0
+            end_frame = min(end_frame, nframes)
+
+            # Convert frame indices to sample indices (multiplying by channels is crucial for multi-channel)
+            start_sample = start_frame * nchannels
+            end_sample = end_frame * nchannels
+
+            if end_sample <= start_sample:
+                return 0.0
+
+            total_sq = 0.0
+            curr_sample = start_sample
+
+            # Query chunks to cover the requested range
+            while curr_sample < end_sample:
+                chunk_idx = curr_sample // CHUNK_SAMPLES
+                chunk_start_sample = chunk_idx * CHUNK_SAMPLES
+
+                local_start = curr_sample - chunk_start_sample
+                local_end = min(end_sample - chunk_start_sample, CHUNK_SAMPLES)
+
+                cs = get_chunk_cumsum(chunk_idx)
+
+                if len(cs) <= local_start:
+                    break
+
+                actual_local_end = min(local_end, len(cs) - 1)
+                if actual_local_end > local_start:
+                    # O(1) sum calculation over the segment via cumulative sum difference
+                    total_sq += (cs[actual_local_end] - cs[local_start])
+
+                curr_sample += (actual_local_end - local_start)
+
+                if actual_local_end < local_end:
+                    break
+
+            actual_samples_read = curr_sample - start_sample
+            if actual_samples_read <= 0:
+                return 0.0
+
+            return float(np.sqrt(total_sq / actual_samples_read))
         except Exception:
             return 0.0
+
     return energy_func
 
 
