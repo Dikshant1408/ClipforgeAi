@@ -1,0 +1,3 @@
+## 2024-05-18 - Caching Sliding Window Array Operations on Audio Chunks
+**Learning:** When calculating energy sliding windows over large audio files, reading from disk directly is too slow, but reading the entire file into memory causes OOM errors. Additionally, standard loop-based processing on cached chunks is inefficient.
+**Action:** Use `functools.lru_cache` (with small maxsize, e.g., 8) combined with on-demand chunked reads. For intervals within these chunks, pre-calculate array cumulative sums (`np.cumsum`) with `np.float64` precision during cache load. This changes the $O(W)$ query per window to an $O(1)$ query, while safely bounding memory. Also ensure proper indexing scaling for multi-channel data.
