@@ -29,28 +29,92 @@ def energy_score(rms: float, max_rms: float) -> float:
 def make_wav_energy_func(wav_path: str) -> Callable[[float, float], float]:
     import wave
     import numpy as np
-    def energy_func(start: float, end: float) -> float:
+    from functools import lru_cache
+
+    CHUNK_DURATION = 30.0  # seconds per chunk
+
+    try:
+        with wave.open(wav_path, "rb") as w:
+            sr = w.getframerate()
+            sampwidth = w.getsampwidth()
+            nchannels = w.getnchannels()
+            nframes = w.getnframes()
+    except Exception:
+        return lambda s, e: 0.0
+
+    if sampwidth != 2:
+        return lambda s, e: 0.0
+
+    frames_per_chunk = int(CHUNK_DURATION * sr)
+
+    @lru_cache(maxsize=8)
+    def get_chunk(chunk_idx: int) -> tuple[np.ndarray, int]:
         try:
             with wave.open(wav_path, "rb") as w:
-                sr = w.getframerate()
-                sampwidth = w.getsampwidth()
-                if sampwidth != 2:
-                    return 0.0
-                start_frame = int(start * sr)
-                end_frame = int(end * sr)
-                if start_frame >= w.getnframes():
-                    return 0.0
+                start_frame = chunk_idx * frames_per_chunk
+                if start_frame >= nframes:
+                    return np.array([0.0], dtype=np.float64), 0
+
                 w.setpos(start_frame)
-                frames_to_read = min(end_frame - start_frame, w.getnframes() - start_frame)
-                if frames_to_read <= 0:
-                    return 0.0
+                frames_to_read = min(frames_per_chunk, nframes - start_frame)
                 data = w.readframes(frames_to_read)
+
                 samples = np.frombuffer(data, dtype=np.int16)
-                if len(samples) == 0:
-                    return 0.0
-                return float(np.sqrt(np.mean(samples.astype(np.float32) ** 2)))
+                # Cast to float64 to prevent cumulative sum precision loss
+                samples_sq = samples.astype(np.float64) ** 2
+
+                # Precompute cumulative sums for O(1) query time
+                cumsum_sq = np.concatenate(([0.0], np.cumsum(samples_sq)))
+                return cumsum_sq, frames_to_read
         except Exception:
+            return np.array([0.0], dtype=np.float64), 0
+
+    def energy_func(start: float, end: float) -> float:
+        if start >= end:
             return 0.0
+
+        start_frame = int(start * sr)
+        end_frame = int(end * sr)
+
+        if start_frame >= nframes:
+            return 0.0
+
+        end_frame = min(end_frame, nframes)
+
+        total_energy_sq = 0.0
+        total_samples = 0
+
+        start_chunk = start_frame // frames_per_chunk
+        end_chunk = end_frame // frames_per_chunk
+
+        for chunk_idx in range(start_chunk, end_chunk + 1):
+            cumsum_sq, chunk_frames = get_chunk(chunk_idx)
+            if chunk_frames == 0:
+                continue
+
+            chunk_start_frame = chunk_idx * frames_per_chunk
+
+            f_start = max(start_frame, chunk_start_frame)
+            f_end = min(end_frame, chunk_start_frame + chunk_frames)
+
+            if f_start < f_end:
+                rel_start = f_start - chunk_start_frame
+                rel_end = f_end - chunk_start_frame
+
+                # Account for multiple channels in frame indexing
+                s_start = rel_start * nchannels
+                s_end = rel_end * nchannels
+
+                if s_end <= len(cumsum_sq) - 1:
+                    chunk_sum_sq = cumsum_sq[s_end] - cumsum_sq[s_start]
+                    total_energy_sq += chunk_sum_sq
+                    total_samples += (s_end - s_start)
+
+        if total_samples == 0:
+            return 0.0
+
+        return float(np.sqrt(max(0.0, total_energy_sq / total_samples)))
+
     return energy_func
 
 
